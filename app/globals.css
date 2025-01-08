@@ -17,5 +17,70 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+}
+/* Optional: Set default body styles */
+body {
+  @apply font-sans;
+}
+
+/* Small devices (phones, 576px and up) */
+@media (min-width: 576px) and (max-width: 767.98px) {
+  /* Your CSS here for sm screens */
+  :root {
+    font-size: 70% !important;
+  }
+
+  .bottom_tabs {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffff;
+    width: 100%;
+    padding: 10px;
+    height: auto;
+    margin: 0;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  /* Your CSS here for md screens */
+  :root {
+    font-size: 40% !important;
+  }
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  /* Your CSS here for lg screens */
+  :root {
+    font-size: 42% !important;
+  }
+}
+
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) and (max-width: 1599.98px) {
+  /* Your CSS here for xl screens */
+  :root {
+    font-size: 48% !important;
+  }
+}
+
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1600px) and (max-width: 1899.98px) {
+  /* Your CSS here for xl screens */
+  :root {
+    font-size: 69% !important;
+  }
+}
+
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 2134px) and (max-width: 2880.98px) {
+  /* Your CSS here for xl screens */
+  :root {
+    font-size: 80% !important;
+  }
 }
