@@ -151,14 +151,24 @@ export const getBaseUrl = (caseType: "common" | "user" | "admin" | "api"): strin
     }
 };
 
+
+
 /**
  * Handles toast notifications for responses and errors.
  * @param {Object} params - Parameters for toast handling.
  */
 interface ToastParams {
-    res?: { message?: string };
-    err?: { response?: { status?: number; data?: { errors?: Record<string, string[]>; message?: string } } };
-    next?: () => void;
+    res?: { message?: string }; // Success response message
+    err?: {
+        response?: {
+            status?: number;
+            data?: {
+                errors?: Record<string, string[]>;
+                message?: string;
+            }
+        };
+    }; // Error response
+    next?: () => void; // Next action after showing toast (optional)
 }
 
 export const handleToast = ({ res, err, next }: ToastParams): void => {
@@ -167,12 +177,30 @@ export const handleToast = ({ res, err, next }: ToastParams): void => {
 
         if (next) next();
     } else if (err) {
-        if (err.response?.status === 422) {
-            const validationErrors = err.response.data?.errors || {};
-            const errorMessages = Object.values(validationErrors).flat();
-            errorMessages.forEach((message) => toast.error(message));
+        const { response } = err;
+
+        if (response) {
+            if (response.status === 422) {
+                // Handling validation errors
+                const validationErrors = response.data?.errors || {};
+                const errorMessages = Object.values(validationErrors).flat();
+                errorMessages.forEach((message) => toast.error(message));
+            } else if (response.status === 400) {
+                // Bad Request error handling
+                toast.error("Invalid request. Please check your input.");
+            } else if (response.status === 404) {
+                // Not Found error handling
+                toast.error("Requested resource not found.");
+            } else if (response.status === 500) {
+                // Server error handling
+                toast.error("Internal server error. Please try again later.");
+            } else {
+                // Generic error message for any other status
+                toast.error(response?.data?.message || "Something went wrong. Please try again.");
+            }
         } else {
-            toast.error(err.response?.data?.message || "Something went wrong. Please try again.");
+            // In case of network or non-response errors
+            toast.error("Network error. Please check your connection.");
         }
     }
 };
