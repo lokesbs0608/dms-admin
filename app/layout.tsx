@@ -1,37 +1,42 @@
-import type { Metadata } from "next";
-import {  Poppins } from "next/font/google";
+'use client'; // Mark this file as a client component
+
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import Sidebar from "./components/organisims/sideBar";
 import { SidebarData } from "./constants/sidebar";
-
-
+import { useAuth } from "./hooks/useAuth"; // Hook for authentication
 
 const poppins = Poppins({
   variable: "--font-poppins",
-  subsets: ["latin"], // Corrected "nomal" to "latin"
-  weight: ["400", "500", "600", "700"], // Optional: Add specific weights if needed
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  title: "DMS",
-  description: "Delivery Management System",
-};
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { isAuthenticated } = useAuth(); // Fetch authentication status
+
   return (
     <html lang="en">
-      <body className={` ${poppins.variable}`}>
+      <body className={`${poppins.variable}`}>
         <div className="md:flex">
-          {/* Sidebar: 14% width for md, default width for smaller screens */}
-          <aside className="md:w-[10%] md:w-1/7 lg:w-1/8 w-[100%]">
-            <Sidebar items={SidebarData} />
-          </aside>
-          {/* Main content: remaining width */}
-          <main className="flex-1 md:mt-0  mt-14 md:px-2 shadow">{children}</main>
+          {/* Render Sidebar if authenticated */}
+          {isAuthenticated && (
+            <aside className="md:w-[10%] lg:w-[12%] w-full">
+              <Sidebar items={SidebarData} />
+            </aside>
+          )}
+
+          {/* Main content */}
+          <main
+            className={`flex-1 h-screen ${isAuthenticated ? "md:mt-0 md:px-2" : "mt-0"}`}
+          >
+            {children}
+          </main>
         </div>
       </body>
     </html>
