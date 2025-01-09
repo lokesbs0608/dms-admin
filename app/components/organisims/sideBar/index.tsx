@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { logout } from "@/app/network/helper";
 
 type SidebarItem = {
     label: string;
@@ -90,6 +91,14 @@ const Sidebar: React.FC<SidebarProps> = ({ items }) => {
                                 {item.label}
                             </Link>
                         ))}
+                        <Link
+                            onClick={logout}
+                            key={'logout'}
+                            href={'/login'}
+                            className=" p-2 px-3 mx-2  hover:bg-gray-900 rounded-md transition"
+                        >
+                            Logout
+                        </Link>
                     </div>
                 </nav>
             </aside>

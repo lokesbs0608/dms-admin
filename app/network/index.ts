@@ -16,10 +16,6 @@ interface ErrorResponse {
 // Create an Axios instance
 const instance: AxiosInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_COMMON_BASE_URL, // Use your backend base URL
-    headers: {
-        "X-Requested-With": "XMLHttpRequest", // Identifies the request as an AJAX call
-    },
-    withCredentials: true, // Ensures cookies are sent with requests
     validateStatus: (status) => status >= 200 && status < 400, // Treat 302 as a success
 });
 

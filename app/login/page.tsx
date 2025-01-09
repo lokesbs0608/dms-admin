@@ -3,6 +3,7 @@
 import Image from "next/image";
 import React, { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
+import toast from "react-hot-toast";
 
 const loginRoutes = [
     { id: 1, route: "/auth/login" },
@@ -13,12 +14,12 @@ const loginRoutes = [
 const LoginForm: React.FC = () => {
     const { login } = useAuth();
     const [formData, setFormData] = useState({
-        email: "",
-        password: "",
+        username: "test@gmail.com",
+        password: "Login@123",
     });
-    const [repeatPassword, setRepeatPassword] = useState<string>("");
+    const [repeatPassword, setRepeatPassword] = useState<string>("Login@123");
     const [loginOption, setLoginOption] = useState<number>(1);
-    const [terms, setTerms] = useState<boolean>(false);
+    const [terms, setTerms] = useState<boolean>(true);
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -27,7 +28,7 @@ const LoginForm: React.FC = () => {
 
         if (type === "checkbox" && name === "terms") {
             setTerms(e.target.checked); // Handling checkbox specifically
-        } else if (name === "email" || name === "password") {
+        } else if (name === "username" || name === "password") {
             setFormData((prev) => ({ ...prev, [name]: value }));
         } else if (name === "repeatPassword") {
             setRepeatPassword(value);
@@ -48,14 +49,13 @@ const LoginForm: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (formData.password !== repeatPassword) {
-            alert("Passwords do not match");
+            toast.error("Passwords do not match");
             return;
         }
         if (!terms) {
-            alert("You must agree to the terms and conditions");
+            toast.error("You must agree to the terms and conditions");
             return;
         }
-
         try {
             const resp = await login(getRouteById(loginOption), formData);
             console.log(resp);
@@ -92,8 +92,8 @@ const LoginForm: React.FC = () => {
                 <input
                     type="email"
                     id="email"
-                    name="email"
-                    value={formData.email}
+                    name="username"
+                    value={formData.username}
                     onChange={handleChange}
                     className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-sm-light"
                     placeholder="name@flowbite.com"
@@ -146,7 +146,6 @@ const LoginForm: React.FC = () => {
                     onChange={handleChange}
                     id="countries"
                     value={loginOption}
-                    defaultValue={1}
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                 >
                     <option value="">Choose a Login</option>

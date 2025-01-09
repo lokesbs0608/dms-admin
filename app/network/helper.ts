@@ -71,9 +71,20 @@ export const removeLocalStorage = (key: string): void => {
     }
 };
 
+interface AuthResponse {
+    token?: string;
+    user?: unknown;  // You can replace `unknown` with a more specific type for `user`
+}
+
 // Authenticate user by passing data to cookie and local storage during signin
-export const authenticate = (response: unknown, next?: () => void): void => {
-    setCookie("user", JSON.stringify(response));
+export const authenticate = (response: AuthResponse, next?: () => void): void => {
+    if (response?.token && response?.user) {
+        // Only set cookies if token and user are available
+        setCookie("token", response.token);
+        setCookie("user", JSON.stringify(response.user)); // Assuming user is an object
+    } else {
+        console.error("Invalid response data: token or user is missing.");
+    }
 
     if (next && typeof next === "function") {
         next(); // Trigger the next step (e.g., redirect)
@@ -81,6 +92,7 @@ export const authenticate = (response: unknown, next?: () => void): void => {
         console.log("No callback provided or invalid.");
     }
 };
+
 
 // Access user info from local storage
 export const isAuth = (): boolean => {
@@ -100,9 +112,7 @@ export const isAuth = (): boolean => {
 export const logout = async (): Promise<void> => {
     try {
         removeCookie("user");
-        removeCookie("organization");
-        removeCookie("isLoggedInYN");
-        removeCookie("tourGuide");
+        removeCookie("token")
         localStorage.clear();
         sessionStorage.clear();
 
@@ -110,6 +120,7 @@ export const logout = async (): Promise<void> => {
         queryClient.invalidateQueries();
         queryClient.resetQueries();
         queryClient.refetchQueries();
+        window.location.reload()
     } catch (error) {
         console.error("Error during logout:", error);
     }

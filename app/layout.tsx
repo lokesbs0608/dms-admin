@@ -5,6 +5,7 @@ import "./globals.css";
 import Sidebar from "./components/organisims/sideBar";
 import { SidebarData } from "./constants/sidebar";
 import { useAuth } from "./hooks/useAuth"; // Hook for authentication
+import { Toaster } from "react-hot-toast";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -24,6 +25,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${poppins.variable}`}>
         <div className="md:flex">
+          <Toaster />
           {/* Render Sidebar if authenticated */}
           {isAuthenticated && (
             <aside className="md:w-[10%] lg:w-[12%] w-full">

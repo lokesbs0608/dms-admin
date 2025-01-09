@@ -33,7 +33,12 @@ export default async function middleware(req: { nextUrl?: string | URL; headers:
     const token = cookies["token"]; // Replace "token" with your cookie name for the auth token
 
     // Check if the token exists
-    if (!token && !isPublicRoute(path)) {
+    if (token) {
+        // If the user is authenticated and trying to access the login page, redirect to home or another page
+        if (path === loginRoute) {
+            return NextResponse.redirect(new URL("/", req.nextUrl)); // Redirect to home page
+        }
+    } else if (!isPublicRoute(path)) {
         // If the token is not present and it's not a public route, redirect to the login page
         return NextResponse.redirect(new URL(loginRoute, req.nextUrl));
     }
