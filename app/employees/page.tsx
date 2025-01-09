@@ -82,7 +82,7 @@ const Employees = () => {
                 />
                 <Link
                     href={"employees/create"}
-                    className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 ml-4 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                    className="text-white bg-indigo-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 ml-4 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                 >
                     Create
                 </Link>
@@ -90,13 +90,13 @@ const Employees = () => {
 
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg mt-4">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <caption className="p-5 text-[#1d4ed8] text-lg font-semibold text-left rtl:text-right bg-white dark:text-white dark:bg-gray-800">
+                    <caption className="p-5 text-indigo-600 text-lg font-semibold text-left rtl:text-right bg-white dark:text-white dark:bg-gray-800">
                         Employees
                     </caption>
 
-                    <thead className="text-xs text-[#1d4ed8] uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <thead className="text-xs text-indigo-600 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
-                            <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
+                            <th scope="col" className="px-6 py-3 text-indigo-600">
                                 Name
                             </th>
                             <th scope="col" className="px-6 py-3">

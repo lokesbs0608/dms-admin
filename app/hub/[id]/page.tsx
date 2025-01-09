@@ -5,6 +5,7 @@ import { createHub, getHubById, updateHub } from "../../utils/hub"; // Add API u
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { getEmployees } from "@/app/utils/employees";
+import toast from "react-hot-toast";
 
 const HubForm = () => {
     const router = useRouter();
@@ -64,7 +65,9 @@ const HubForm = () => {
                     ? await updateHub(id.toString(), filteredData) // Call update API
                     : await createHub(filteredData); // Call create API
             console.log(response);
-            router.push("/hubs"); // Redirect to the hubs list page
+            toast.success(response?.message);
+            router.back()
+
         } catch (error) {
             console.error("Error submitting form:", error);
         }
@@ -104,14 +107,16 @@ const HubForm = () => {
         fetchEmployees();
     }, []);
 
+    const selectedEmployee = employees.find((employee) => employee._id === formData?.manager_id);
+    const selectedEmergencyPerson = employees.find((employee) => employee._id === formData?.emergency_person_id);
     return (
         <div className="container mx-auto p-4">
             <div className="flex text-center content-center items-center gap-4 mb-4">
                 <Link href="#" onClick={() => router.back()}>
                     <span>
                         <svg
-                            width="30"
-                            height="30"
+                            width="20"
+                            height="20"
                             viewBox="0 0 38.4 38.4"
                             xmlns="http://www.w3.org/2000/svg"
                         >
@@ -119,13 +124,13 @@ const HubForm = () => {
                         </svg>
                     </span>
                 </Link>
-                <h2 className="text-2xl font-bold ">Hub Form</h2>
+                <h2 className="text-2xl font-bold text-indigo-600 ">Hub Form</h2>
             </div>
 
             {loading ? (
                 <div>Loading.......</div>
             ) : (
-                <form
+                <><form
                     onSubmit={handleSubmit}
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
                 >
@@ -137,8 +142,7 @@ const HubForm = () => {
                             value={formData.name}
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
-                            required
-                        />
+                            required />
                     </div>
 
                     <div className="col-span-1">
@@ -149,8 +153,7 @@ const HubForm = () => {
                             value={formData.address}
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
-                            required
-                        />
+                            required />
                     </div>
 
                     <div className="col-span-1">
@@ -161,8 +164,7 @@ const HubForm = () => {
                             value={formData.hub_code}
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
-                            required
-                        />
+                            required />
                     </div>
 
                     <div className="col-span-1">
@@ -174,8 +176,7 @@ const HubForm = () => {
 
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
-                            required
-                        />
+                            required />
                     </div>
 
                     <div className="col-span-1">
@@ -187,8 +188,7 @@ const HubForm = () => {
                             value={formData.pincodes.join(", ")}
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
-                            placeholder="Separate by commas"
-                        />
+                            placeholder="Separate by commas" />
                     </div>
 
                     <div className="col-span-1">
@@ -199,8 +199,7 @@ const HubForm = () => {
                             value={formData.landline_number}
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
-                            required
-                        />
+                            required />
                     </div>
 
                     <div className="col-span-1">
@@ -258,12 +257,60 @@ const HubForm = () => {
                     <div className="col-span-2 md:col-span-2 lg:col-span-3">
                         <button
                             type="submit"
-                            className="text-white w-full bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                            className="text-white max-w-[30rem]  bg-indigo-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                         >
                             Submit
                         </button>
                     </div>
                 </form>
+
+
+                    <div className="p-4 my-4 bg-white shadow-md rounded-md">
+                        <h2 className="text-center my-4 text-2xl text-indigo-600">Employee details</h2>
+                        {selectedEmployee && selectedEmergencyPerson ? (
+                            <table className="w-full border-collapse border border-gray-300">
+                                <tbody>
+                                    <tr className="border-b">
+                                        <td className="px-4 py-2 font-medium text-gray-600">Manager Name</td>
+                                        <td className="px-4 py-2">{selectedEmployee.name}</td>
+                                    </tr>
+                                    <tr className="border-b">
+                                        <td className="px-4 py-2 font-medium text-gray-600">Manager ID</td>
+                                        <td className="px-4 py-2">{selectedEmployee._id}</td>
+                                    </tr>
+                                    <tr className="border-b">
+                                        <td className="px-4 py-2 font-medium text-gray-600">Position</td>
+                                        <td className="px-4 py-2">{selectedEmployee.role}</td>
+                                    </tr>
+                                    <tr className="border-b">
+                                        <td className="px-4 py-2 font-medium text-gray-600">Department</td>
+                                        <td className="px-4 py-2">{selectedEmployee.section || "N/A"}</td>
+                                    </tr>
+                                    <tr className="border-b">
+                                        <td className="px-4 py-2 font-medium text-gray-600">Emergency Contact Name</td>
+                                        <td className="px-4 py-2">{selectedEmergencyPerson?.name || "N/A"}</td>
+                                    </tr>
+                                    <tr className="border-b">
+                                        <td className="px-4 py-2 font-medium text-gray-600">Emergency Contact Email</td>
+                                        <td className="px-4 py-2">{selectedEmergencyPerson?.email || "N/A"}</td>
+                                    </tr>
+                                    <tr className="border-b">
+                                        <td className="px-4 py-2 font-medium text-gray-600">Emergency Contact Role</td>
+                                        <td className="px-4 py-2">{selectedEmergencyPerson?.role || "N/A"}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="px-4 py-2 font-medium text-gray-600">Emergency Contact Section</td>
+                                        <td className="px-4 py-2">{selectedEmergencyPerson?.section || "N/A"}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        ) : (
+                            <p className="text-gray-500">No manager selected</p>
+                        )}
+                    </div>
+
+
+                </>
             )}
         </div>
     );

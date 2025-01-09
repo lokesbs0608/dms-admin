@@ -70,7 +70,7 @@ const getHubById = async (id: string) => {
 // Update hub
 const updateHub = async (id: string, data: Partial<IHub>) => {
     try {
-        const response = await instance.patch(`hub/${id}`, data);
+        const response = await instance.put(`hub/${id}`, data);
         return response.data;
     } catch (error) {
         console.error("Error updating employee:", error);

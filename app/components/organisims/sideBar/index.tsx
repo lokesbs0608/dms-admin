@@ -65,7 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({ items }) => {
                         )}
                     </button>
 
-                    <div className="p-4 text-center font-bold text-xl md:hidden text-[#1d4ed8]">Speedo One</div>
+                    <div className="p-4 text-center font-bold text-xl md:hidden  text-indigo-600">Speedo One</div>
 
 
                 </div>
@@ -77,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ items }) => {
                 className={`fixed top-0 left-0   text-black w-100 transform h-screen ${isOpen ? "translate-x-0" : "-translate-x-full"
                     } lg:translate-x-0 lg:static transition-transform duration-300 z-50 border-r-2 shadow-sm`}
             >
-                <div className="p-4 text-center font-bold md:block hidden text-2xl text-[#1d4ed8]">Speedo One</div>
+                <div className="p-4 text-center font-bold md:block hidden text-2xl  text-indigo-600">Speedo One</div>
                 <nav className="w-[100%]">
                     <div className="space-y-1 mt-3 min-w-[100%] flex flex-col">
                         {items.map((item) => (
