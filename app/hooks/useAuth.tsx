@@ -4,7 +4,6 @@ import instance from "../network";
 import {
     authenticate,
     getCookie,
-    logout as clearStorage,
 } from "../network/helper";
 import { handleToast } from "../network/helper";
 import { useRouter } from "next/navigation"; // Ensure this is correct
@@ -39,7 +38,6 @@ export const useAuth = () => {
 
     // Login
     const login = async (url: string, data: AuthData): Promise<void> => {
-        await clearStorage(); // Clear any existing authentication data
         try {
             const response = await instance.post(url, data);
             if ([200, 201, 204].includes(response?.status)) {

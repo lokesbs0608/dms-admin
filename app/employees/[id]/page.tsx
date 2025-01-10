@@ -32,7 +32,7 @@ const EmployeeForm = () => {
         ref_id: "",
         remarks: "",
         _id: "",
-        password: "Login@123",
+        // password: "Login@123",
     });
     const [loading, setLoading] = useState(true);
 
