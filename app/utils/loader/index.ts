@@ -40,7 +40,7 @@ const createLoader = async (data: Partial<IEmployee>) => {
 const getLoader = async (url: string = "") => {
     try {
         const response = await instance.get(`/loader?${url}`);
-        return response.data?.employees;
+        return response.data;
     } catch (error) {
         console.error("Error fetching employees:", error);
         if ((error as ErrorWithResponse).response) {
@@ -57,7 +57,7 @@ const getLoader = async (url: string = "") => {
 const getLoaderById = async (id: string) => {
     try {
         const response = await instance.get(`loader/${id}`);
-        return response.data?.employee;
+        return response.data;
     } catch (error) {
         console.error("Error fetching employee:", error);
         if ((error as ErrorWithResponse).response) {
@@ -93,7 +93,7 @@ const updateLoader = async (id: string, data: Partial<ILoader>) => {
 // archive loader
 const archiveLoader = async (id: string): Promise<ErrorWithResponse> => {
     try {
-        const response = await instance.patch(`loader/${id}/archive`);
+        const response = await instance.patch(`loader/${id}/archiveUnarchiveLoader`);
         return response?.data
     } catch (error) {
         console.error("Error deleting employee:", error);

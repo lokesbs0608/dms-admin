@@ -5,11 +5,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import {
-    createCustomer,
-    getCustomerById,
-    updateCustomer,
-} from "@/app/utils/customer";
+import { createLoader, getLoaderById, updateLoader } from "@/app/utils/loader";
 
 const HubForm = () => {
     const router = useRouter();
@@ -64,8 +60,8 @@ const HubForm = () => {
         try {
             const response =
                 id && id !== "create"
-                    ? await updateCustomer(id.toString(), filteredData) // Call update API
-                    : await createCustomer(filteredData); // Call create API
+                    ? await updateLoader(id.toString(), filteredData) // Call update API
+                    : await createLoader(filteredData); // Call create API
             if (response) {
                 toast.success(response?.message);
                 router.back();
@@ -78,7 +74,7 @@ const HubForm = () => {
     const fetchHubById = useCallback(
         async (hubID: string) => {
             try {
-                const resp: ILoader = await getCustomerById(hubID);
+                const resp: ILoader = await getLoaderById(hubID);
                 setFormData({ ...formData, ...resp });
 
                 setLoading(false);
@@ -209,6 +205,7 @@ const HubForm = () => {
                                             },
                                         })
                                     }
+                                    value={formData?.location?.pincode}
                                     className="w-full mt-2 p-2 border rounded"
                                     required
                                 />
@@ -224,7 +221,7 @@ const HubForm = () => {
                                             ...formData,
                                             location: {
                                                 ...formData.location,
-                                                address: e.target.value,
+                                                state: e.target.value,
                                             },
                                         })
                                     }
