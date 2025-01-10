@@ -3,6 +3,7 @@ interface IEmployee {
     name: string;
     gender: "Male" | "Female" | "Other";
     username: string;
+    password?: string,
     email: string;
     role: string;
     date_of_joining: Date;
@@ -16,7 +17,7 @@ interface IEmployee {
     section: string;
     account_id: string;
     documents_id: string[];
-    branch_id: string;
+    branch_id?: string;
     hub_id: string;
     ref_id: string;
     remarks: string;

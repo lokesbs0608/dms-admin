@@ -1,31 +1,6 @@
 import { handleToast } from "@/app/network/helper";
 import instance from "../../network/index"; // Import your axios instance
 
-interface IEmployee {
-    _id: string;
-    name: string;
-    gender: "Male" | "Female" | "Other";
-    username: string;
-    email: string;
-    role: string;
-    date_of_joining: Date;
-    location: {
-        address: string;
-        city: string;
-        state: string;
-        pincode: string;
-    };
-    status: "Active" | "Inactive";
-    section: string;
-    account_id: string;
-    documents_id: string[];
-    branch_id: string;
-    hub_id: string;
-    ref_id: string;
-    remarks: string;
-    created_by: string;
-    updated_by: string;
-}
 
 // Define a type for the error that can optionally have a response property
 type ErrorWithResponse = {
@@ -40,13 +15,10 @@ type ErrorWithResponse = {
 };
 
 
-// Get employees
-const createEmployee = async (data: Partial<IEmployee>) => {
+// create customer
+const createCustomer = async (data: Partial<ICustomer>) => {
     try {
-        const response = await instance.post(`/employees`, data);
-        handleToast({
-            res: { message: response?.data?.message }
-        });
+        const response = await instance.post(`/customer/register`, data);
         return response.data;
     } catch (error) {
         console.error("Error fetching employees:", error);
@@ -60,13 +32,12 @@ const createEmployee = async (data: Partial<IEmployee>) => {
     }
 };
 
-// Get employees
-const getEmployees = async (url: string = "") => {
+// Get customers
+const getCustomers = async (url: string = "") => {
     try {
-        const response = await instance.get(`/employees?${url}`);
-        return response.data?.employees;
+        const response = await instance.get(`/customer/all?${url}`);
+        return response.data?.customers;
     } catch (error) {
-        console.error("Error fetching employees:", error);
         if ((error as ErrorWithResponse).response) {
             handleToast({
                 err: {
@@ -77,11 +48,11 @@ const getEmployees = async (url: string = "") => {
     }
 };
 
-// Get employee by ID
-const getEmployeeById = async (id: string): Promise<IEmployee> => {
+// Get customer by ID
+const getCustomerById = async (id: string) => {
     try {
-        const response = await instance.get(`employees/${id}`);
-        return response.data?.employee;
+        const response = await instance.get(`customer/${id}`);
+        return response.data;
     } catch (error) {
         console.error("Error fetching employee:", error);
         if ((error as ErrorWithResponse).response) {
@@ -91,17 +62,13 @@ const getEmployeeById = async (id: string): Promise<IEmployee> => {
                 }
             });
         }
-        throw error; // Rethrow error after toast
     }
 };
 
-// Update employee
-const updateEmployee = async (id: string, data: Partial<IEmployee>): Promise<IEmployee> => {
+// Update customer
+const updateCustomer = async (id: string, data: Partial<ICustomer>) => {
     try {
-        const response = await instance.put(`/employees/${id}`, data);
-        handleToast({
-            res: { message: response?.data?.message }
-        });
+        const response = await instance.put(`customer/${id}`, data);
         return response.data;
     } catch (error) {
         console.error("Error updating employee:", error);
@@ -112,14 +79,13 @@ const updateEmployee = async (id: string, data: Partial<IEmployee>): Promise<IEm
                 }
             });
         }
-        throw error; // Rethrow error after toast
     }
 };
 
-// Delete employee
-const archiveEmployee = async (id: string): Promise<ErrorWithResponse> => {
+// archive customer
+const archiveCustomer = async (id: string) => {
     try {
-        const response = await instance.patch(`employees/${id}/archive`);
+        const response = await instance.patch(`customer/${id}/archive`);
         return response?.data
     } catch (error) {
         console.error("Error deleting employee:", error);
@@ -130,13 +96,12 @@ const archiveEmployee = async (id: string): Promise<ErrorWithResponse> => {
                 }
             });
         }
-        throw error; // Rethrow error after toast
     }
 };
-// Delete employee
-const unarchiveEmployee = async (id: string): Promise<ErrorWithResponse> => {
+// unarchive customer
+const unarchiveCustomer = async (id: string) => {
     try {
-        const response = await instance.patch(`employees/${id}/unarchive`);
+        const response = await instance.patch(`customer/${id}/unarchive`);
         return response?.data
     } catch (error) {
         console.error("Error deleting employee:", error);
@@ -147,16 +112,15 @@ const unarchiveEmployee = async (id: string): Promise<ErrorWithResponse> => {
                 }
             });
         }
-        throw error; // Rethrow error after toast
     }
 };
 
 
 export {
-    getEmployees,
-    getEmployeeById,
-    updateEmployee,
-    archiveEmployee,
-    createEmployee,
-    unarchiveEmployee
+    getCustomers,
+    getCustomerById,
+    unarchiveCustomer,
+    updateCustomer,
+    archiveCustomer,
+    createCustomer
 };

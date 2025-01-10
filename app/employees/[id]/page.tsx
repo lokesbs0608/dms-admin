@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { createEmployee, getEmployeeById } from "@/app/utils/employees";
+import { createEmployee, getEmployeeById, updateEmployee } from "@/app/utils/employees";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { getHubs } from "@/app/utils/hub";
 
 const EmployeeForm = () => {
     const router = useRouter(); // Initialize the router
 
     const { id } = useParams();
+    const [hubs, setHubs] = useState<IHub[]>([]);
     const [formData, setFormData] = useState<IEmployee>({
         name: "",
         gender: "Male",
@@ -24,13 +26,13 @@ const EmployeeForm = () => {
         section: "",
         status: "Active",
         account_id: "",
-        branch_id: "",
         date_of_joining: new Date(),
-        documents_id: [""],
+        documents_id: [],
         hub_id: "",
         ref_id: "",
         remarks: "",
         _id: "",
+        password: "Login@123",
     });
     const [loading, setLoading] = useState(true);
 
@@ -54,16 +56,30 @@ const EmployeeForm = () => {
             });
         }
     };
-
     const handleSubmit = async (e: { preventDefault: () => void }) => {
         e.preventDefault();
+        // Filter out empty, null, undefined fields, and empty arrays from formData
+        const filteredData = Object.fromEntries(
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            Object.entries(formData).filter(([_, value]) => {
+                // Check for non-null, non-undefined, non-empty string, and non-empty array
+                if (Array.isArray(value)) {
+                    return value.length > 0; // Keep array only if it's not empty
+                }
+                return value !== null && value !== undefined && value !== ""; // Check for non-null, non-undefined, non-empty string
+            })
+        );
         try {
-            const response = await createEmployee(formData);
-            console.log(response);
+            const response = id && id !== "create"
+                ? await updateEmployee(id.toString(), filteredData) // Call update API
+                : await createEmployee(filteredData); // Call create API
+
+            console.log("Form submitted successfully:", response);
         } catch (error) {
             console.error("Error submitting form:", error);
         }
     };
+
 
     const fetchEmployeeById = useCallback(async (employeeID: string) => {
         try {
@@ -82,11 +98,24 @@ const EmployeeForm = () => {
     useEffect(() => {
         if (id && id !== "create") {
             fetchEmployeeById(id.toString());
-        }
-        else {
-            setLoading(false)
+        } else {
+            setLoading(false);
         }
     }, [fetchEmployeeById, id]);
+
+    const fetchEmployees = async () => {
+        try {
+            const response = await getHubs(); // API endpoint to fetch hubs;
+            setHubs(response);
+        } catch (error) {
+            console.error("Error fetching hubs:", error);
+        }
+    };
+
+    // Fetch hubs from API
+    useEffect(() => {
+        fetchEmployees();
+    }, []);
 
     return (
         <div className="container mx-auto p-4">
@@ -189,7 +218,7 @@ const EmployeeForm = () => {
                             required
                         />
                     </div>
-
+                    {/* 
                     <div className="col-span-1">
                         <label className="block text-sm font-medium">Branch</label>
                         <select
@@ -201,17 +230,22 @@ const EmployeeForm = () => {
                             <option value="Active">Active</option>
                             <option value="Inactive">Inactive</option>
                         </select>
-                    </div>
+                    </div> */}
                     <div className="col-span-1">
                         <label className="block text-sm font-medium">Hub</label>
                         <select
-                            name="status"
-                            value={formData.status}
+                            name="hub_id"
+                            value={formData.hub_id}
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
                         >
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
+                            {hubs?.map((items) => {
+                                return (
+                                    <option key={items?._id} value={items?._id}>
+                                        {items?.name}
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
                     <div className="col-span-1">
