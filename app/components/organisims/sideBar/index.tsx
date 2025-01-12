@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ items }) => {
                     </button>
 
                     <div className="p-4 text-center font-bold text-xl md:hidden text-indigo-600">
-                        Speedo One
+                        Speedo-One
                     </div>
                 </div>
             </div>
@@ -77,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ items }) => {
                     } lg:translate-x-0 lg:static transition-transform duration-300 z-50 border-r shadow-xl`}
             >
                 <div className="p-4 text-center font-bold md:block hidden text-2xl text-indigo-600">
-                    Speedo One
+                    Speedo-One
                 </div>
                 <nav className="w-[100%]">
                     <div className="space-y-1 mt-3 min-w-[100%] flex flex-col">

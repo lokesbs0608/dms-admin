@@ -4,7 +4,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import toast from "react-hot-toast";
 import { createRoutes, getRoutesById, updateRoutes } from "@/app/utils/routes";
 import { getHubs } from "@/app/utils/hub";
 
@@ -70,7 +69,7 @@ const HubForm = () => {
                     ? await updateRoutes(id.toString(), filteredData) // Call update API
                     : await createRoutes(filteredData); // Call create API
             if (response) {
-                toast.success(response?.message);
+
                 router.back();
             }
         } catch (error) {

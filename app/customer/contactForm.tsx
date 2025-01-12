@@ -111,6 +111,8 @@ const ContactForm = ({
                             <option value="Personal">Personal</option>
                             <option value="Business">Business</option>
                             <option value="Emergency">Emergency</option>
+                            <option value="Office">Office</option>
+                            <option value="Support">Support</option>
                         </select>
                     </div>
                     <div className="col-span-1">
