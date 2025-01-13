@@ -1,6 +1,7 @@
 import { getCustomers } from "@/app/utils/customer";
 import { getHubs } from "@/app/utils/hub";
 import React, { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 type Dimension = {
     height: string;
@@ -10,15 +11,40 @@ type Dimension = {
 
 type Item = {
     weight: number | string | null;
-    weightKg: number | string;
+    weightKg?: number | string;
     dimension: Dimension | null;
+    itemId: string;
 };
 
 const OrderForm: React.FC = () => {
-    const [consignorId, setConsignorID] = useState<string | null>(null);
-    const [consigneeId, setConsigneeID] = useState<string | null>(null);
-    const [sourceHubId, setSourceHubId] = useState<string | null>(null);
-    const [destinationHubId, setDestinationHubId] = useState<string | null>(null);
+    const [orderDetails, setOrderDetails] = useState<IOrder>({
+        destinationHubId: "",
+        docketNumber: "",
+        payment_method: "",
+        pickedVehicleNumber: "",
+        sourceHubId: "",
+        status: "Picked",
+        transport_type: "surface",
+        consignee: {
+            address: "",
+            city: "",
+            company_name: "",
+            name: "",
+            number: "",
+            pincode: "",
+        },
+        consignor: {
+            address: "",
+            city: "",
+            company_name: "",
+            name: "",
+            number: "",
+            pincode: "",
+        },
+        consigneeId: "",
+        consignorId: "",
+        items: [],
+    });
     const [consignor, setConsignor] = useState({
         name: "",
         companyName: "",
@@ -41,36 +67,38 @@ const OrderForm: React.FC = () => {
     const [isAddingItems, setIsAddingItems] = useState<boolean>(false);
     const [tempItems, setTempItems] = useState<{
         weight: string;
-        weightKg: number,
-        weightGrams: number,
+        weightKg?: number;
+        weightGrams?: number;
         dimension: Dimension;
         quantity: number;
+        itemId: string;
     }>({
         weight: "",
-        weightKg: 0,
-        weightGrams: 0,
+
         dimension: { height: "", width: "", length: "" },
         quantity: 1,
+        itemId: "",
     });
 
     const handleAddItems = (): void => {
         const { weight, dimension, quantity, weightGrams, weightKg } = tempItems;
         const totalWeight = (weightKg || 0) + (weightGrams || 0) / 1000;
 
-        const dividedWeight = + totalWeight / quantity;
-        const newItems: Item[] = Array.from({ length: quantity }, () => ({
+        const dividedWeight = +totalWeight / quantity;
+        const newItems: Item[] = Array.from({ length: quantity }, (_, index) => ({
             weight: dividedWeight.toFixed(3) || null,
             weightKg: "",
             dimension: weight ? null : { ...dimension },
+            itemId: `${orderDetails?.docketNumber}  /  ${index + 1}`,
         }));
         setItems((prevItems) => [...prevItems, ...newItems]);
         setIsAddingItems(false);
         setTempItems({
             weight: "",
-            weightKg: 0,
-            weightGrams: 0,
+
             dimension: { height: "", width: "", length: "" },
             quantity: 1,
+            itemId: "",
         });
     };
 
@@ -87,7 +115,6 @@ const OrderForm: React.FC = () => {
         }
     };
 
-
     const fetchHubs = async () => {
         try {
             const response = await getHubs(); // API endpoint to fetch hubs;
@@ -100,31 +127,153 @@ const OrderForm: React.FC = () => {
     // Fetch hubs from API
     useEffect(() => {
         fetchCustomers();
-        fetchHubs()
+        fetchHubs();
     }, []);
 
+
+    const validateForm = () => {
+        const errors = [];
+
+        // Docket number validation
+        if (!orderDetails.docketNumber.trim()) {
+            errors.push("Docket number is required.");
+        }
+
+        // Vehicle number validation
+        const vehicleRegex = /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/;
+        if (!vehicleRegex.test(orderDetails.pickedVehicleNumber)) {
+            errors.push("Enter a valid vehicle number (e.g., KA 02 KR 0232).");
+        }
+
+        const phoneRegex = /^[6-9][0-9]{9}$/;
+        const pincodeRegex = /^[1-9][0-9]{5}$/;
+        if (!orderDetails?.consigneeId) {
+            // Phone number validation
+            if (!phoneRegex.test(orderDetails?.consignee?.number || '')) {
+                errors.push("Enter a valid consignee phone number.");
+            }
+
+            if (!pincodeRegex.test(orderDetails?.consignee?.pincode || "")) {
+                errors.push("Enter a valid consignee pincode.");
+            }
+            if (!orderDetails?.consignee?.address?.trim()) {
+                errors.push("Consignee address is required.");
+            }
+        }
+        if (!orderDetails?.consignorId) {
+
+            if (!phoneRegex.test(orderDetails?.consignor?.number || "")) {
+                errors.push("Enter a valid consignor phone number.");
+            }
+
+
+            if (!pincodeRegex.test(orderDetails?.consignor?.pincode || '')) {
+                errors.push("Enter a valid consignor pincode.");
+            }
+
+            // Address validation
+
+            if (!orderDetails?.consignor?.address?.trim()) {
+                errors.push("Consignor address is required.");
+            }
+        }
+        // Return errors
+        return errors;
+    };
+
+    const handleOrderCreate = (e: { preventDefault: () => void; }) => {
+        e.preventDefault();
+
+
+        // Validate the form
+        const errors = validateForm();
+        if (errors.length > 0) {
+            // Show errors using toast
+            errors.forEach((error) => toast.error(error));
+            return;
+        }
+
+        const obj = {
+            docketNumber: orderDetails.docketNumber,
+
+        };
+
+        console.log(obj);
+        try {
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
     return (
-        <div className="p-4">
+        <form onSubmit={handleOrderCreate} className="p-4">
             <h1 className="text-2xl font-bold mb-6">Create Order</h1>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-3 gap-6">
                 <div className="mb-6">
                     <h2 className="font-bold mb-2">Docket Number</h2>
                     <input
-                        type="text"
+                        type="text" // Use "text" to avoid built-in browser formatting for "number"
                         placeholder="Docket Number"
                         className="w-full p-2 border mb-2 rounded"
+                        value={orderDetails?.docketNumber}
+                        name="docketNumber"
+                        required
+                        onChange={(e) => {
+                            const value = e.target.value.replace(/[^0-9]/g, ""); // Remove non-numeric characters
+                            setOrderDetails({ ...orderDetails, docketNumber: value });
+                        }}
                     />
                 </div>
+
+                <div className="mb-6">
+                    <h2 className="font-bold mb-2">Vehicle Number</h2>
+                    <input
+                        type="text"
+                        placeholder="KA02KR0232"
+                        className="w-full p-2 border mb-2 rounded"
+                        value={orderDetails?.pickedVehicleNumber || ""}
+                        name="pickedVehicleNumber"
+                        required
+                        onChange={(e) => {
+                            const value = e.target.value.toUpperCase(); // Convert to uppercase
+                            const regex = /^[A-Z0-9]*$/; // Allow only letters and numbers during typing
+
+                            // Update value only if it matches allowed characters
+                            if (regex.test(value)) {
+                                setOrderDetails({
+                                    ...orderDetails,
+                                    pickedVehicleNumber: value,
+                                });
+                            }
+                        }}
+                        onBlur={() => {
+                            const regex = /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/; // Full validation on blur
+                            if (!regex.test(orderDetails?.pickedVehicleNumber || "")) {
+                                alert('Enter Valid Vehicle Number')
+                            }
+                        }}
+                    />
+                </div>
+
                 <div className="mb-6">
                     <h2 className="font-bold mb-2">Transport Type</h2>
                     <select
-                        defaultValue={"surface"}
+                        required
+                        name={"transport_type"}
+                        value={orderDetails?.transport_type}
+                        onChange={(e) =>
+                            setOrderDetails({
+                                ...orderDetails,
+                                transport_type: e.target.value,
+                            })
+                        }
                         className="w-full p-2 border rounded"
                     >
                         <option value="surface">Surface</option>
                         <option value="train">Train</option>
                         <option value="air">Air</option>
+                        <option value="sea">Sea</option>
                     </select>
                 </div>
             </div>
@@ -134,18 +283,24 @@ const OrderForm: React.FC = () => {
                     <h2 className="font-bold mb-2">Consignor</h2>
 
                     <select
-                        onChange={(e) => setConsignorID(e.target.value || null)}
+                        name="consignorId"
+                        onChange={(e) =>
+                            setOrderDetails({ ...orderDetails, consignorId: e.target.value })
+                        }
                         className="w-full p-2 border rounded mb-4"
+                        value={orderDetails?.consignorId}
                     >
                         <option value="">Select Existing Customer</option>
-                        {customers?.map((item) => (
-                            <option key={item?._id} value={item?._id}>
-                                {item?.company_name}
-                            </option>
-                        ))}
+                        {customers
+                            ?.filter((item) => item._id !== orderDetails?.consigneeId) // Exclude the selected consignor
+                            .map((item) => (
+                                <option key={item?._id} value={item?._id}>
+                                    {item?.company_name}
+                                </option>
+                            ))}
                     </select>
 
-                    {!consignorId && (
+                    {!orderDetails?.consignorId && (
                         <div>
                             <input
                                 type="text"
@@ -157,6 +312,7 @@ const OrderForm: React.FC = () => {
                                 name="companyName"
                                 id="companyName"
                                 className="w-full p-2 border mb-2 rounded"
+                                required
                             />
                             <input
                                 type="text"
@@ -167,6 +323,7 @@ const OrderForm: React.FC = () => {
                                 }
                                 value={consignor.name}
                                 name="name"
+                                required
                                 id="name"
                             />
                             <input
@@ -179,6 +336,7 @@ const OrderForm: React.FC = () => {
                                 value={consignor.address}
                                 name="address"
                                 id="address"
+                                required
                             />
                             <input
                                 type="text"
@@ -188,6 +346,7 @@ const OrderForm: React.FC = () => {
                                     setConsignor({ ...consignor, city: e.target.value })
                                 }
                                 value={consignor.city}
+                                required
                                 name="city"
                                 id="city"
                             />
@@ -195,20 +354,35 @@ const OrderForm: React.FC = () => {
                                 type="text"
                                 placeholder="Pincode"
                                 className="w-full p-2 border mb-2 rounded"
-                                onChange={(e) =>
-                                    setConsignor({ ...consignor, pincode: e.target.value })
-                                }
-                                value={consignor.pincode}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    const regex = /^[1-9][0-9]{0,5}$/; // Validates up to 6 digits and starts with 1-9
+
+                                    // Allow input only if it matches the regex or is empty
+                                    if (regex.test(value) || value === "") {
+                                        setConsignor({ ...consignor, pincode: value });
+                                    }
+                                }}
+                                value={consignor.pincode || ""}
+                                required
                                 name="pincode"
                                 id="pincode"
                             />
+
                             <input
                                 type="text"
                                 placeholder="Phone Number"
+                                required
                                 className="w-full p-2 border mb-2 rounded"
-                                onChange={(e) =>
-                                    setConsignor({ ...consignor, number: e.target.value })
-                                }
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    const regex = /^[6-9][0-9]{0,9}$/; // Allows 10 digits starting with 6-9
+
+                                    // Update value only if it matches the regex or is empty
+                                    if (regex.test(value) || value === "") {
+                                        setConsignor({ ...consignor, number: value });
+                                    }
+                                }}
                                 value={consignor.number}
                                 name="number"
                                 id="number"
@@ -221,19 +395,23 @@ const OrderForm: React.FC = () => {
                 <div className="mb-6">
                     <h2 className="font-bold mb-2">Consignee</h2>
                     <select
-                        onChange={(e) => setConsigneeID(e.target.value || null)}
+                        required
+                        onChange={(e) =>
+                            setOrderDetails({ ...orderDetails, consigneeId: e.target.value })
+                        }
                         className="w-full p-2 border rounded mb-4"
+                        value={orderDetails?.consigneeId}
                     >
                         <option value="">Select Existing Customer</option>
                         {customers
-                            ?.filter((item) => item._id !== consignorId) // Exclude the selected consignor
+                            ?.filter((item) => item._id !== orderDetails?.consignorId) // Exclude the selected consignor
                             .map((item) => (
                                 <option key={item?._id} value={item?._id}>
                                     {item?.company_name}
                                 </option>
                             ))}
                     </select>
-                    {!consigneeId && (
+                    {!orderDetails?.consigneeId && (
                         <div>
                             <input
                                 type="text"
@@ -245,6 +423,7 @@ const OrderForm: React.FC = () => {
                                 value={consignee.companyName}
                                 name="companyName"
                                 id="companyName"
+                                required
                             />
                             <input
                                 type="text"
@@ -256,6 +435,7 @@ const OrderForm: React.FC = () => {
                                 value={consignee.name}
                                 name="name"
                                 id="name"
+                                required
                             />
                             <input
                                 type="text"
@@ -267,6 +447,7 @@ const OrderForm: React.FC = () => {
                                 value={consignee.address}
                                 name="address"
                                 id="address"
+                                required
                             />
                             <input
                                 type="text"
@@ -278,15 +459,24 @@ const OrderForm: React.FC = () => {
                                 value={consignee.city}
                                 name="city"
                                 id="city"
+                                required
                             />
+
                             <input
                                 type="text"
                                 placeholder="Pincode"
                                 className="w-full p-2 border mb-2 rounded"
-                                onChange={(e) =>
-                                    setConsignee({ ...consignee, pincode: e.target.value })
-                                }
-                                value={consignee.pincode}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    const regex = /^[1-9][0-9]{0,5}$/; // Validates up to 6 digits and starts with 1-9
+
+                                    // Allow input only if it matches the regex or is empty
+                                    if (regex.test(value) || value === "") {
+                                        setConsignee({ ...consignee, pincode: value });
+                                    }
+                                }}
+                                value={consignee.pincode || ""}
+                                required
                                 name="pincode"
                                 id="pincode"
                             />
@@ -294,13 +484,21 @@ const OrderForm: React.FC = () => {
                                 type="text"
                                 placeholder="Phone Number"
                                 className="w-full p-2 border mb-2 rounded"
-                                onChange={(e) =>
-                                    setConsignee({ ...consignee, number: e.target.value })
-                                }
-                                value={consignee.number}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    const regex = /^[6-9][0-9]{0,9}$/; // Allows 10 digits starting with 6-9
+
+                                    // Update value only if it matches the regex or is empty
+                                    if (regex.test(value) || value === "") {
+                                        setConsignee({ ...consignee, number: value });
+                                    }
+                                }}
+                                value={consignee.number || ""}
                                 name="number"
+                                required
                                 id="number"
                             />
+
                         </div>
                     )}
                 </div>
@@ -311,12 +509,16 @@ const OrderForm: React.FC = () => {
                 <div>
                     <h2 className="font-bold mb-2">Source Hub Id</h2>
                     <select
-                        onChange={(e) => setSourceHubId(e.target.value || null)}
+                        required
+                        value={orderDetails?.sourceHubId}
+                        onChange={(e) =>
+                            setOrderDetails({ ...orderDetails, sourceHubId: e.target.value })
+                        }
                         className="w-full p-2 border rounded mb-4"
                     >
                         <option value="">Select Source Hub</option>
                         {hubs
-                            ?.filter((item) => item._id !== destinationHubId) // Exclude the selected consignor
+                            ?.filter((item) => item._id !== orderDetails?.destinationHubId) // Exclude the selected consignor
                             .map((item) => (
                                 <option key={item?._id} value={item?._id}>
                                     {item?.name}
@@ -327,12 +529,19 @@ const OrderForm: React.FC = () => {
                 <div>
                     <h2 className="font-bold mb-2">Destination Hub Id</h2>
                     <select
-                        onChange={(e) => setDestinationHubId(e.target.value || null)}
+                        required
+                        onChange={(e) =>
+                            setOrderDetails({
+                                ...orderDetails,
+                                destinationHubId: e.target.value,
+                            })
+                        }
                         className="w-full p-2 border rounded mb-4"
+                        value={orderDetails?.destinationHubId}
                     >
                         <option value="">Select Destination Hub</option>
                         {hubs
-                            ?.filter((item) => item._id !== sourceHubId) // Exclude the selected consignor
+                            ?.filter((item) => item._id !== orderDetails?.sourceHubId) // Exclude the selected consignor
                             .map((item) => (
                                 <option key={item?._id} value={item?._id}>
                                     {item?.name}
@@ -344,45 +553,56 @@ const OrderForm: React.FC = () => {
                 {/* Payment Method */}
                 <div className="mb-6">
                     <h2 className="font-bold mb-2">Payment Method</h2>
-                    <select className="w-full p-2 border rounded">
+                    <select
+                        required
+                        value={orderDetails?.payment_method}
+                        onChange={(e) =>
+                            setOrderDetails({
+                                ...orderDetails,
+                                payment_method: e.target.value,
+                            })
+                        }
+                        className="w-full p-2 border rounded"
+                    >
                         <option value="">Select Payment Method</option>
                         <option value="prepaid">Prepaid</option>
-                        <option value="cod">COD</option>
+                        <option value="btp">BTP</option>
+                        <option value="cash">Cash</option>
+                        <option value="to_pay">To Pay</option>
                     </select>
                 </div>
             </div>
-
-            {/* Items Section */}
-            <div className="mb-6">
-                <h2 className="font-bold mb-2">Items</h2>
-                <button
-                    className="p-2 bg-blue-500 text-white rounded mb-4"
-                    onClick={() => setIsAddingItems(true)}
-                >
-                    Add Items
-                </button>
-                <ul className="space-y-2">
-                    {items.map((item, index) => (
-                        <li
-                            key={index}
-                            className="flex justify-between items-center border p-2 rounded"
-                        >
-                            <span>
-                                {item.weight
-                                    ? `Item ${index + 1}: Weight ${item.weight}`
-                                    : `Item ${index + 1}: Dimensions ${item.dimension?.height}x${item.dimension?.width
-                                    }x${item.dimension?.length}`}
-                            </span>
-                            <button
-                                className="text-red-500"
-                                onClick={() => handleRemoveItem(index)}
+            {orderDetails?.docketNumber && (
+                <div className="mb-6">
+                    <h2 className="font-bold mb-2">Items</h2>
+                    <button
+                        className="p-2 bg-blue-500 text-white rounded mb-4"
+                        onClick={() => setIsAddingItems(true)}
+                    >
+                        Add Items
+                    </button>
+                    <ul className="space-y-2">
+                        {items.map((item, index) => (
+                            <li
+                                key={index}
+                                className="flex justify-between items-center border p-2 rounded"
                             >
-                                Remove
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            </div>
+                                <span> {item?.itemId} </span>
+                                <span>{` Weight ${item.weight}`}</span>
+                                <span>{` Dimension :  H:${item.dimension?.height || "NA"}, L:${item.dimension?.length || "NA"
+                                    } W:${item.dimension?.width || "NA"}`}</span>
+
+                                <button
+                                    className="text-red-500"
+                                    onClick={() => handleRemoveItem(index)}
+                                >
+                                    Remove
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
             {/* Adding Items Modal */}
             {isAddingItems && (
@@ -397,6 +617,7 @@ const OrderForm: React.FC = () => {
                                     type="number"
                                     className="w-full p-2 border rounded"
                                     value={tempItems.weightKg || ""}
+                                    required
                                     onChange={(e) =>
                                         setTempItems({
                                             ...tempItems,
@@ -413,7 +634,8 @@ const OrderForm: React.FC = () => {
                                     value={tempItems.weightGrams || ""}
                                     onChange={(e) => {
                                         const value = parseInt(e.target.value) || 0; // Parse the input as an integer
-                                        if (value <= 999) { // Allow only values less than or equal to 999
+                                        if (value <= 999) {
+                                            // Allow only values less than or equal to 999
                                             setTempItems({
                                                 ...tempItems,
                                                 weightGrams: value,
@@ -422,7 +644,6 @@ const OrderForm: React.FC = () => {
                                     }}
                                     placeholder="Grams"
                                 />
-
                             </div>
                         </div>
                         <div className="mb-4">
@@ -479,6 +700,7 @@ const OrderForm: React.FC = () => {
                             <label className="block mb-2">Quantity:</label>
                             <input
                                 type="number"
+                                required
                                 className="w-full p-2 border rounded"
                                 value={tempItems.quantity}
                                 onChange={(e) =>
@@ -508,10 +730,16 @@ const OrderForm: React.FC = () => {
             )}
 
             {/* Submit Button */}
-            <button className="p-3 bg-green-500 text-white rounded w-full">
+            <button
+                disabled={
+                    !orderDetails?.docketNumber || orderDetails?.items?.length < 0
+                }
+                type="submit"
+                className="p-3 bg-green-500 text-white rounded w-full"
+            >
                 Create Order
             </button>
-        </div>
+        </form>
     );
 };
 
