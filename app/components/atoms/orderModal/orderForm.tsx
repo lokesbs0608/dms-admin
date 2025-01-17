@@ -1,5 +1,6 @@
 import { getCustomers } from "@/app/utils/customer";
 import { getHubs } from "@/app/utils/hub";
+import { createOrder } from "@/app/utils/orders";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -12,11 +13,22 @@ type Dimension = {
 type Item = {
     weight: number | string | null;
     weightKg?: number | string;
-    dimension: Dimension | null;
+    dimension: {
+        height: string;
+        width: string;
+        length: string;
+    };
     itemId: string;
+    price?: string
 };
 
-const OrderForm: React.FC = () => {
+interface Props {
+    id: string
+}
+
+
+const OrderForm: React.FC = ({ id }: Props) => {
+    console.log(id)
     const [orderDetails, setOrderDetails] = useState<IOrder>({
         destinationHubId: "",
         docketNumber: "",
@@ -28,7 +40,7 @@ const OrderForm: React.FC = () => {
         consignee: {
             address: "",
             city: "",
-            company_name: "",
+            companyName: "",
             name: "",
             number: "",
             pincode: "",
@@ -36,7 +48,7 @@ const OrderForm: React.FC = () => {
         consignor: {
             address: "",
             city: "",
-            company_name: "",
+            companyName: "",
             name: "",
             number: "",
             pincode: "",
@@ -81,14 +93,14 @@ const OrderForm: React.FC = () => {
     });
 
     const handleAddItems = (): void => {
-        const { weight, dimension, quantity, weightGrams, weightKg } = tempItems;
+        const { dimension, quantity, weightGrams, weightKg } = tempItems;
         const totalWeight = (weightKg || 0) + (weightGrams || 0) / 1000;
 
         const dividedWeight = +totalWeight / quantity;
         const newItems: Item[] = Array.from({ length: quantity }, (_, index) => ({
             weight: dividedWeight.toFixed(3) || null,
             weightKg: "",
-            dimension: weight ? null : { ...dimension },
+            dimension: { ...dimension },
             itemId: `${orderDetails?.docketNumber}  /  ${index + 1}`,
         }));
         setItems((prevItems) => [...prevItems, ...newItems]);
@@ -181,7 +193,7 @@ const OrderForm: React.FC = () => {
         return errors;
     };
 
-    const handleOrderCreate = (e: { preventDefault: () => void; }) => {
+    const handleOrderCreate = async (e: { preventDefault: () => void; }) => {
         e.preventDefault();
 
 
@@ -193,13 +205,18 @@ const OrderForm: React.FC = () => {
             return;
         }
 
-        const obj = {
-            docketNumber: orderDetails.docketNumber,
 
+        const obj: IOrder = {
+            ...orderDetails,
+            consignor: consignor,
+            consignee: consignee,
+            items: items
         };
 
-        console.log(obj);
+        console.log(obj, '>>>>>>>>>>>>>>');
         try {
+            const resp =  await createOrder(obj);
+            console.log(resp, '>>>>>>>>>>>')
         } catch (error) {
             console.log(error);
         }

@@ -31,7 +31,7 @@ const OrderDetailModal = ({ isOpen, onClose }: Props) => {
                     </div>
 
                     {/* OrderForm Component */}
-                    <OrderForm />
+                    <OrderForm   />
                 </div>
             </div>
         </div>

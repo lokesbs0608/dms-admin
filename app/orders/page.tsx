@@ -8,8 +8,8 @@ import { getOrders } from "../utils/orders";
 import OrderDetailModal from "../components/atoms/orderModal";
 
 const Orders = () => {
-  const [hubs, setHubs] = useState<IHub[]>([]);
-  const [filteredHubs, setFilteredHubs] = useState<IHub[]>([]);
+  const [hubs, setHubs] = useState<IOrder[]>([]);
+  const [filteredHubs, setFilteredHubs] = useState<IOrder[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<IHub | null>(null);
@@ -33,7 +33,7 @@ const Orders = () => {
   // Filter hubs based on search query
   useEffect(() => {
     const filtered = hubs?.filter((hub) =>
-      hub.name.toLowerCase().includes(searchQuery.toLowerCase())
+      hub?.docketNumber?.toLowerCase()?.includes(searchQuery?.toLowerCase())
     );
     setFilteredHubs(filtered);
   }, [searchQuery, hubs]);
@@ -138,18 +138,24 @@ const Orders = () => {
                   scope="row"
                   className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                 >
-                  {hub.name}
+                  {hub.docketNumber}
                 </th>
-                <td className="px-6 py-4">{hub.address}</td>
-                <td className="px-6 py-4">{hub.landline_number}</td>
+                <td className="px-6 py-4">{hub.consignor?.name}</td>
+                <td className="px-6 py-4">{hub.consignee?.name}</td>
+                <td className="px-6 py-4">{hub.sourceHubId}</td>
+                <td className="px-6 py-4">{hub.consignor?.city}</td>
+                <td className="px-6 py-4">{hub.destinationHubId}</td>
+                <td className="px-6 py-4">{hub.consignee?.city}</td>
+                <td className="px-6 py-4">{hub.transport_type}</td>
+                <td className="px-6 py-4">{hub.payment_method}</td>
                 <td className="px-6 py-4">{hub.status}</td>
                 <td className="px-6 py-4">
-                  <Link
-                    href={`hub/${hub._id}`}
+                  <p
+                    onClick={() => setShowOrderModal(true)}
                     className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
                   >
                     Edit
-                  </Link>
+                  </p>
                   {hub?.status === "Active" ? (
                     <button
                       className="ml-4 font-medium text-red-600 dark:text-red-500 hover:underline"

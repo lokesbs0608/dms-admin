@@ -16,12 +16,12 @@ type ErrorWithResponse = {
 
 
 // create hub
-const createHub = async (data: Partial<IHub>): Promise<IEmployee[]> => {
+const createOrder = async (data: Partial<IOrder>) => {
     try {
-        const response = await instance.post(`/hub`, data);
+        const response = await instance.post(`/orders`, data);
         return response.data;
     } catch (error) {
-        console.error("Error fetching employees:", error);
+        console.error("Error creating order:", error);
         if ((error as ErrorWithResponse).response) {
             handleToast({
                 err: {
@@ -29,7 +29,6 @@ const createHub = async (data: Partial<IHub>): Promise<IEmployee[]> => {
                 }
             });
         }
-        throw error; // Rethrow error after toast
     }
 };
 
@@ -124,5 +123,5 @@ export {
     unarchiveHub,
     updateHub,
     archiveHub,
-    createHub
+    createOrder
 };

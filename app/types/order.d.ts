@@ -1,7 +1,7 @@
 // Frontend Types for Order Schema
 
 interface IAddressDetails {
-    company_name: string | null;
+    companyName: string | null;
     name: string | null;
     address: string | null;
     city: string | null;
@@ -11,12 +11,13 @@ interface IAddressDetails {
 
 interface ItemDetails {
     weight: number | string | null;
+    weightKg?: number | string;
     dimension: {
-        height: number;
-        width: number;
-        length: number;
+        height: string;
+        width: string;
+        length: string;
     };
-    price: number;
+    price?: string;
     itemId: string;
 }
 
@@ -28,8 +29,9 @@ interface IHistoryDetails {
 }
 
 interface IOrder {
-    consignorId?: string ;
-    consigneeId?: string ;
+    _id?: string,
+    consignorId?: string;
+    consigneeId?: string;
     consignor?: IAddressDetails;
     consignee?: IAddressDetails;
     docketNumber: string;
@@ -57,10 +59,6 @@ interface IOrder {
     items: ItemDetails[];
     direct_to_loader?: boolean;
     delivered_by?: string | null;
-    created_by?: string | null;
-    updated_by?: string | null;
     pickedVehicleNumber: string;
     drsId?: string | null;
-    createdAt?: Date;
-    updatedAt?: Date;
 }
