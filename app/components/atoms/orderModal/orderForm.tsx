@@ -97,22 +97,35 @@ const OrderForm = ({ id }: Props) => {
         const totalWeight = (weightKg || 0) + (weightGrams || 0) / 1000;
 
         const dividedWeight = +totalWeight / quantity;
-        const newItems: Item[] = Array.from({ length: quantity }, (_, index) => ({
+
+        // Generate new items based on the quantity
+        const newItems: Item[] = Array.from({ length: quantity }, () => ({
             weight: dividedWeight.toFixed(3) || null,
             weightKg: "",
             dimension: { ...dimension },
-            itemId: `${orderDetails?.docketNumber}  /  ${index + 1}`,
+            itemId: "", // Temporary placeholder for itemId
         }));
-        setItems((prevItems) => [...prevItems, ...newItems]);
+
+        // Combine existing items and new items, then regenerate itemIds for all
+        const updatedItems = [...items, ...newItems].map((item, index) => ({
+            ...item,
+            itemId: `${orderDetails?.docketNumber} / ${index + 1}`, // Update itemId for all items
+        }));
+
+        // Update the state with the updated items
+        setItems(updatedItems);
+
+        // Reset the form state
         setIsAddingItems(false);
         setTempItems({
             weight: "",
-
             dimension: { height: "", width: "", length: "" },
             quantity: 1,
             itemId: "",
         });
     };
+
+
 
     const handleRemoveItem = (index: number): void => {
         setItems(items.filter((_, i) => i !== index));
@@ -622,6 +635,7 @@ const OrderForm = ({ id }: Props) => {
                 <div className="mb-6">
                     <h2 className="font-bold mb-2">Items</h2>
                     <button
+                        type="button"
                         className="p-2 bg-blue-500 text-white rounded mb-4"
                         onClick={() => setIsAddingItems(true)}
                     >
@@ -766,6 +780,7 @@ const OrderForm = ({ id }: Props) => {
                                 Cancel
                             </button>
                             <button
+                                type="button"
                                 className="p-2 bg-blue-500 text-white rounded"
                                 onClick={handleAddItems}
                             >
