@@ -1,18 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { archiveHub, unarchiveHub, } from "../utils/hub";
-import Link from "next/link";
-import toast from "react-hot-toast";
 import { getOrders } from "../utils/orders";
 import OrderDetailModal from "../components/atoms/orderModal";
 
 const Orders = () => {
-  const [hubs, setHubs] = useState<IOrder[]>([]);
-  const [filteredHubs, setFilteredHubs] = useState<IOrder[]>([]);
-  const [showModal, setShowModal] = useState(false);
+  const [hubs, setHubs] = useState<IOrderTable[]>([]);
+  const [filteredHubs, setFilteredHubs] = useState<IOrderTable[]>([]);
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<IHub | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<IOrderTable | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchEmployees = async () => {
@@ -38,34 +34,9 @@ const Orders = () => {
     setFilteredHubs(filtered);
   }, [searchQuery, hubs]);
 
-  // Handle Delete Action
-  const handleDelete = async (id: string) => {
-    if (selectedEmployee?.status === "Inactive") {
-      try {
-        const resp = await unarchiveHub(id);
-        toast.success(resp?.message);
-        fetchEmployees();
-        setShowModal(false); // Close modal after delete
-      } catch (error) {
-        console.error("Error deleting employee:", error);
-      }
-    } else {
-      try {
-        const resp = await archiveHub(id);
-        toast.success(resp?.message);
-        fetchEmployees();
-        setShowModal(false); // Close modal after delete
-      } catch (error) {
-        console.error("Error deleting employee:", error);
-      }
-    }
-  };
 
-  // Open confirmation modal
-  const openDeleteModal = (employee: IHub) => {
-    setSelectedEmployee(employee);
-    setShowModal(true);
-  };
+
+
 
   return (
     <div className="h-screen overflow-auto py-2 ">
@@ -129,48 +100,36 @@ const Orders = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredHubs?.map((hub) => (
+            {filteredHubs?.map((order) => (
               <tr
                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
-                key={hub._id}
+                key={order._id}
               >
                 <th
                   scope="row"
                   className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                 >
-                  {hub.docketNumber}
+                  {order.docketNumber}
                 </th>
-                <td className="px-6 py-4">{hub.consignor?.name}</td>
-                <td className="px-6 py-4">{hub.consignee?.name}</td>
-                <td className="px-6 py-4">{hub.sourceHubId}</td>
-                <td className="px-6 py-4">{hub.consignor?.city}</td>
-                <td className="px-6 py-4">{hub.destinationHubId}</td>
-                <td className="px-6 py-4">{hub.consignee?.city}</td>
-                <td className="px-6 py-4">{hub.transport_type}</td>
-                <td className="px-6 py-4">{hub.payment_method}</td>
-                <td className="px-6 py-4">{hub.status}</td>
+                <td className="px-6 py-4">{order.consignor?.name}</td>
+                <td className="px-6 py-4">{order.consignee?.name}</td>
+                <td className="px-6 py-4">{order.sourceHubId?.name}</td>
+                <td className="px-6 py-4">{order.sourceHubId?.hub_code}</td>
+                {/* <td className="px-6 py-4">{order.consignor?.city}</td> */}
+                <td className="px-6 py-4">{order.destinationHubId?.name}</td>
+                <td className="px-6 py-4">{order.destinationHubId?.hub_code}</td>
+                {/* <td className="px-6 py-4">{order.consignee?.city}</td> */}
+                <td className="px-6 py-4">{order.transport_type}</td>
+                <td className="px-6 py-4">{order.payment_method}</td>
+                <td className="px-6 py-4">{order.status}</td>
                 <td className="px-6 py-4">
                   <p
-                    onClick={() => setShowOrderModal(true)}
+                    onClick={() => { setShowOrderModal(true); setSelectedOrder(order) }}
                     className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
                   >
                     Edit
                   </p>
-                  {hub?.status === "Active" ? (
-                    <button
-                      className="ml-4 font-medium text-red-600 dark:text-red-500 hover:underline"
-                      onClick={() => openDeleteModal(hub)}
-                    >
-                      Delete
-                    </button>
-                  ) : (
-                    <button
-                      className="ml-4 font-medium text-red-600 dark:text-red-500 hover:underline"
-                      onClick={() => openDeleteModal(hub)}
-                    >
-                      Un Archive
-                    </button>
-                  )}
+
                 </td>
               </tr>
             ))}
@@ -178,41 +137,9 @@ const Orders = () => {
         </table>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showModal && selectedEmployee && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-1/3">
-            <h3 className="text-xl font-semibold">
-              Confirm{" "}
-              {selectedEmployee?.status === "Active" ? "Archive" : "Unarchive"}{" "}
-            </h3>
-            <p className="mt-4">
-              Are you sure you want to{" "}
-              {selectedEmployee?.status === "Active" ? "Archive" : "Unarchive"}{" "}
-              {selectedEmployee.name}?
-            </p>
-            <div className="mt-6 flex justify-end space-x-4">
-              <button
-                className="px-4 py-2 text-white bg-red-600 rounded"
-                onClick={() => handleDelete(selectedEmployee._id)}
-              >
-                Yes,{" "}
-                {selectedEmployee?.status === "Active"
-                  ? "Archive"
-                  : "Unarchive"}
-              </button>
-              <button
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded"
-                onClick={() => setShowModal(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      <OrderDetailModal isOpen={showOrderModal} onClose={() => setShowOrderModal(false)} />
+
+      <OrderDetailModal isOpen={showOrderModal} onClose={() => setShowOrderModal(false)} id={selectedOrder?._id} />
 
 
 

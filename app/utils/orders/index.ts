@@ -49,11 +49,11 @@ const getOrders = async (url: string = "") => {
     }
 };
 
-// Get hub by ID
-const getHubById = async (id: string) => {
+// Get order by ID
+const getOrderById = async (id: string) => {
     try {
-        const response = await instance.get(`hub/${id}`);
-        return response.data?.hub;
+        const response = await instance.get(`orders/${id}`);
+        return response.data;
     } catch (error) {
         console.error("Error fetching employee:", error);
         if ((error as ErrorWithResponse).response) {
@@ -66,10 +66,10 @@ const getHubById = async (id: string) => {
     }
 };
 
-// Update hub
-const updateHub = async (id: string, data: Partial<IHub>) => {
+// Update order
+const updateOrder = async (id: string, data: Partial<IOrder>) => {
     try {
-        const response = await instance.put(`hub/${id}`, data);
+        const response = await instance.put(`orders/${id}`, data);
         return response.data;
     } catch (error) {
         console.error("Error updating employee:", error);
@@ -118,10 +118,10 @@ const unarchiveHub = async (id: string) => {
 
 
 export {
-    getHubById,
+    getOrderById,
     getOrders,
     unarchiveHub,
-    updateHub,
+    updateOrder,
     archiveHub,
     createOrder
 };

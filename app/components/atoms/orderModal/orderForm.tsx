@@ -1,6 +1,6 @@
 import { getCustomers } from "@/app/utils/customer";
 import { getHubs } from "@/app/utils/hub";
-import { createOrder } from "@/app/utils/orders";
+import { createOrder, getOrderById, updateOrder } from "@/app/utils/orders";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -23,11 +23,11 @@ type Item = {
 };
 
 interface Props {
-    id: string
+    id: string | undefined
 }
 
 
-const OrderForm: React.FC = ({ id }: Props) => {
+const OrderForm = ({ id }: Props) => {
     console.log(id)
     const [orderDetails, setOrderDetails] = useState<IOrder>({
         destinationHubId: "",
@@ -135,12 +135,25 @@ const OrderForm: React.FC = ({ id }: Props) => {
             console.error("Error fetching hubs:", error);
         }
     };
-
-    // Fetch hubs from API
     useEffect(() => {
-        fetchCustomers();
-        fetchHubs();
-    }, []);
+        const fetchData = async () => {
+            try {
+                await fetchCustomers();
+                await fetchHubs();
+
+                if (id) {
+                    const resp = await getOrderById(id);
+                    setOrderDetails(resp);
+                    setItems(resp?.items)
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        };
+
+        fetchData();
+    }, [id]);
+
 
 
     const validateForm = () => {
@@ -213,13 +226,29 @@ const OrderForm: React.FC = ({ id }: Props) => {
             items: items
         };
 
-        console.log(obj, '>>>>>>>>>>>>>>');
-        try {
-            const resp =  await createOrder(obj);
-            console.log(resp, '>>>>>>>>>>>')
-        } catch (error) {
-            console.log(error);
+
+        if (id) {
+            try {
+                const resp = await updateOrder(id, obj);
+                if (resp) {
+                    toast.success(resp?.message)
+                }
+
+            } catch (error) {
+                console.log(error);
+            }
+        } else {
+            try {
+                const resp = await createOrder(obj);
+                if (resp) {
+                    toast.success(resp?.message)
+                }
+
+            } catch (error) {
+                console.log(error);
+            }
         }
+
     };
 
     return (
@@ -610,6 +639,7 @@ const OrderForm: React.FC = ({ id }: Props) => {
                                     } W:${item.dimension?.width || "NA"}`}</span>
 
                                 <button
+                                    type="button"
                                     className="text-red-500"
                                     onClick={() => handleRemoveItem(index)}
                                 >
@@ -754,7 +784,7 @@ const OrderForm: React.FC = ({ id }: Props) => {
                 type="submit"
                 className="p-3 bg-green-500 text-white rounded w-full"
             >
-                Create Order
+                {id ? "Update Order" : "Create Order"}
             </button>
         </form>
     );

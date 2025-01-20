@@ -4,9 +4,10 @@ import OrderForm from "./orderForm";
 interface Props {
     isOpen: boolean;
     onClose: () => void;
+    id: string | undefined
 }
 
-const OrderDetailModal = ({ isOpen, onClose }: Props) => {
+const OrderDetailModal = ({ isOpen, onClose, id }: Props) => {
     if (!isOpen) return null;
 
     return (
@@ -14,7 +15,7 @@ const OrderDetailModal = ({ isOpen, onClose }: Props) => {
             {/* Overlay */}
             <div
                 className="absolute inset-0 bg-black bg-opacity-50"
-              
+
             ></div>
 
             {/* Modal Content */}
@@ -31,7 +32,7 @@ const OrderDetailModal = ({ isOpen, onClose }: Props) => {
                     </div>
 
                     {/* OrderForm Component */}
-                    <OrderForm   />
+                    <OrderForm id={id} />
                 </div>
             </div>
         </div>
