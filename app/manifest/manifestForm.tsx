@@ -4,6 +4,7 @@ import { getHubs } from "../utils/hub";
 import { getOrderById, getOrders } from "../utils/orders";
 import { getLoader } from "../utils/loader";
 import { useAuth } from "../hooks/useAuth";
+import { createBatch, deleteBatchItems, getBatchOrder } from "../utils/manifest";
 
 interface Props {
     isOpen: boolean;
@@ -57,11 +58,10 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
         vehicleNumber: "",
 
     });
+    const [batchOrder, setBatchOrder] = useState<IBatch[]>([]);
+
 
     const [showItems, setShowItems] = useState('')
-
-
-
 
     useEffect(() => {
         // Check if hub_id is present
@@ -91,6 +91,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             try {
                 await fetchLoader();
                 await fetchHubs();
+                await fetchBatchOrder();
 
                 if (id) {
                     const resp = await getOrderById(id);
@@ -121,6 +122,54 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             console.error("Error fetching hubs:", error);
         }
     };
+    const fetchBatchOrder = async () => {
+        try {
+            const resp = await getBatchOrder(`status=Picked`);
+            if (resp?.message === 'No batches found') return setBatchOrder([])
+
+            // Define the temporary array to hold batch orders
+            const temp: IOrderReference[] = [];
+
+            // Array of static colors for batch orders with lighter shades
+            const colors = ['#FFB3B3', '#A5D6A7', '#81D4FA', '#FFF176', '#D1C4E9', '#FFCC80', '#80DEEA', '#C8E6C9'];
+
+
+
+            // Loop through the ordersIDs of the response and format data
+            resp.forEach((batch: { ordersIDs: { parent_id: { _id: string; }; items: []; }[]; _id: string; }, index: number) => {
+                const color = colors[index % colors.length]; // Cycle through colors based on index
+
+                batch?.ordersIDs?.forEach((order: { parent_id: { _id: string; }; items: [] }) => {
+                    const ordersIDs = {
+                        parent_id: order.parent_id?._id,  // Assuming parent_id is part of the order
+                        items: order.items,  // Assuming items is an array in the order
+                        _id: batch._id,  // Adding batch _id to the orders
+                        color: color, // Adding color to each batch order
+                    };
+                    temp.push(ordersIDs); // Push the formatted order to the temporary array
+                });
+            });
+
+            // Now transform the temp array into the correct format for batch order
+            const primary: IBatch[] = [];
+            temp.forEach((items) => {
+                const ordersIDs = {
+                    ordersIDs: [items], // Wrap the items inside an ordersIDs array
+                };
+                primary.push(ordersIDs);
+            });
+
+            // Set the state with the transformed batch order data
+            setBatchOrder(primary);
+
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+
+
+
 
     // Filter hubs based on search query
     useEffect(() => {
@@ -130,6 +179,96 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
         setFilteredOrders(filtered);
     }, [orders, searchQuery]);
 
+
+
+    const createBatchOrder = (parentID: string, item: Item) => {
+        console.log(parentID, item?.itemId)
+        setBatchOrder((prevBatchOrder: IBatch[]) => {
+            // Check if there is an order with the given parentID in the batch
+            const existingOrder = prevBatchOrder.find(batch =>
+                batch.ordersIDs?.some(order => order.parent_id === parentID)
+            );
+
+            if (existingOrder) {
+                return prevBatchOrder.map(batch => {
+                    if (batch.ordersIDs) {
+                        // Find the specific order within ordersIDs
+                        const updatedOrders = batch.ordersIDs.map(order => {
+                            if (order.parent_id === parentID) {
+                                const itemExists = order.items?.some((existingItem: { itemId: string | undefined; }) => existingItem.itemId === item.itemId);
+
+                                if (itemExists) {
+                                    // If the item exists, remove it (same parentId and itemId)
+                                    const updatedItems = order.items?.filter((existingItem: { itemId: string | undefined; }) => existingItem.itemId !== item.itemId);
+                                    return updatedItems?.length ? { ...order, items: updatedItems } : undefined; // Remove order if items are empty
+                                } else {
+                                    // If the item does not exist, add it
+                                    return { ...order, items: [...(order.items || []), item] };
+                                }
+                            }
+                            return order;
+                        }).filter(order => order !== undefined) as IOrderReference[]; // Remove undefined orders
+
+                        return { ...batch, ordersIDs: updatedOrders };
+                    }
+                    return batch;
+                }).filter(batch => batch.ordersIDs?.length); // Remove batches with no orders
+            } else {
+                // If the parentID does not exist, create a new OrderReference
+                const newOrder: IOrderReference = { parent_id: parentID, items: [item] };
+                const newBatch: IBatch = { ordersIDs: [newOrder] };
+                return [...prevBatchOrder, newBatch];
+            }
+        });
+    };
+    const isItemChecked = (parentID: string, itemId: string) => {
+        // Find the batch that contains the specific order with the parentID and itemId
+        const existingOrder = batchOrder.find(batch =>
+            batch.ordersIDs?.some(order =>
+                order.parent_id === parentID && order.items?.some((item: { itemId: string; }) => item.itemId === itemId)
+            )
+        );
+
+        // If an order is found, retrieve the color from the corresponding batch and return both found status and color
+        if (existingOrder) {
+            const orderWithColor = existingOrder?.ordersIDs?.find(order =>
+                order.parent_id === parentID && order.items?.some((item: { itemId: string; }) => item.itemId === itemId)
+            );
+
+            // Return true and the color associated with the batch
+            const color = orderWithColor?.color || '#FFFFFF'; // Default color if not found
+            return { found: true, color, batchId: orderWithColor?._id || null };
+        }
+
+        // Return false and no color if not found
+        return { found: false, color: '#FFFFFF' };
+    };
+
+
+
+    const handleBatchCreate = async () => {
+        try {
+            await createBatch(batchOrder);
+            fetchBatchOrder()
+        } catch (error) {
+            console.log(error)
+
+        }
+
+    }
+    const handleRemoveItems = async (batchId: string, itemID: string) => {
+        try {
+            const encodedItemId = encodeURIComponent(itemID);
+            await deleteBatchItems(batchId, encodedItemId);
+            fetchBatchOrder();
+        } catch (error) {
+            console.log(error)
+
+        }
+
+    }
+
+
     if (!isOpen) return null;
 
     return (
@@ -138,7 +277,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             <div className="absolute inset-0 bg-black bg-opacity-50"></div>
 
             {/* Modal Content */}
-            <div className="relative bg-white w-full max-w-[80%] h-[100vh] overflow-y-auto shadow-lg rounded-lg">
+            <div className="relative bg-white w-full max-w-[100%] h-[100vh] overflow-y-auto shadow-lg rounded-lg">
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-2xl font-bold">Manifest Details</h2>
@@ -275,8 +414,21 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="border rounded-lg px-4 py-2 w-full max-w-sm text-gray-700 focus:ring-blue-500 focus:border-blue-500"
                             />
+                            <div>
+                                {batchOrder?.length >= 1 && (
+                                    <button
+                                        onClick={() => handleBatchCreate()}
+                                        className="bg-green-500 mt-3 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded"
+                                    >
+                                        Create Batch
+                                    </button>
+                                )}
 
-                            <div className="flex gap-12 items-start">
+                            </div>
+
+                            <div className="flex gap-6 items-start">
+
+
                                 <div className="relative overflow-x-auto shadow-md sm:rounded-lg mt-4">
                                     <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                                         <caption className="p-5 text-[#1d4ed8] text-lg font-semibold text-left rtl:text-right bg-white dark:text-white dark:bg-gray-800">
@@ -315,7 +467,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
                                                     <tr
                                                         key={`${order._id}_${index}_order`}
-                                                      
+
                                                         className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
                                                     >
                                                         <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
@@ -325,7 +477,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                             </label>
                                                         </th>
                                                         <th
-                                                          onClick={() => setShowItems(showItems === order?._id ? '' : order?._id || '')}
+                                                            onClick={() => setShowItems(showItems === order?._id ? '' : order?._id || '')}
                                                             scope="row"
                                                             className="px-6 cursor-pointer py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                                                         >
@@ -350,13 +502,8 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                             <td colSpan={6} className="px-6 py-3">
                                                                 <table className="w-full border border-gray-300 mt-2">
                                                                     <thead>
-                                                                        <tr className="bg-gray-100 dark:bg-gray-700">
-                                                                            <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
-                                                                                <label>
-                                                                                    <input type="checkbox"  className="cursor-pointer"/>
+                                                                        <tr className="bg-gray-100 dark:bg-gray-700"> <th className="px-4 py-2 border">Action</th>
 
-                                                                                </label>
-                                                                            </th>
                                                                             <th className="px-4 py-2 border">Item ID</th>
                                                                             <th className="px-4 py-2 border">Height</th>
                                                                             <th className="px-4 py-2 border">Length</th>
@@ -366,12 +513,16 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                                     </thead>
                                                                     <tbody>
                                                                         {order?.items.map((item) => (
-                                                                            <tr key={`${item.itemId}_items`} className="border-b">
-                                                                                <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
-                                                                                    <label>
-                                                                                        <input type="checkbox" />
+                                                                            <tr key={`${item.itemId}_items`} className="border " style={{
+                                                                                background: `${isItemChecked(order?._id || '', item?.itemId)?.color || '#FFFFFF'}` // Default to white if no color is found
+                                                                            }}>
+                                                                                <th scope="col" className="px-6 py-3 ">
+                                                                                    {!isItemChecked(order?._id || '', item?.itemId)?.batchId ? (
+                                                                                        <label>
+                                                                                            <input key={item?.itemId} checked={isItemChecked(order?._id || '', item?.itemId)?.found} onChange={() => createBatchOrder(order?._id || '', item)} type="checkbox" />
+                                                                                        </label>
+                                                                                    ) : (<div onClick={() => handleRemoveItems(isItemChecked(order?._id || '', item?.itemId)?.batchId || '', item?.itemId)} className="text-red-500 cursor-pointer" >Remove</div>)}
 
-                                                                                    </label>
                                                                                 </th>
                                                                                 <td className="px-4 py-2 border">{item.itemId}</td>
                                                                                 <td className="px-4 py-2 border">{item.dimension?.height || "N/A"}</td>
@@ -391,6 +542,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                         </tbody>
                                     </table>
                                 </div>
+
                                 <div className="relative overflow-x-auto shadow-md sm:rounded-lg mt-4">
                                     <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                                         <caption className="p-5 text-[#1d4ed8] text-lg font-semibold text-left rtl:text-right bg-white dark:text-white dark:bg-gray-800">
@@ -401,22 +553,10 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                             <tr>
 
                                                 <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
-                                                    Docket Number
+                                                    Docket Number / Batch Id
                                                 </th>
 
-                                                <th scope="col" className="px-6 py-3">
-                                                    Source Hub Id
-                                                </th>
 
-                                                <th scope="col" className="px-6 py-3">
-                                                    Destination Hub Id
-                                                </th>
-                                                <th scope="col" className="px-6 py-3">
-                                                    Transport Type
-                                                </th>
-                                                <th scope="col" className="px-6 py-3">
-                                                    Status
-                                                </th>
                                                 <th scope="col" className="px-6 py-3">
                                                     Action
                                                 </th>
@@ -436,16 +576,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                         {order.docketNumber}
                                                     </th>
 
-                                                    <td className="px-6 py-4">
-                                                        {order.sourceHubId?.hub_code}
-                                                    </td>
-                                                    {/* <td className="px-6 py-4">{order.consignor?.city}</td> */}
-                                                    <td className="px-6 py-4">
-                                                        {order.destinationHubId?.hub_code}
-                                                    </td>
-                                                    {/* <td className="px-6 py-4">{order.consignee?.city}</td> */}
-                                                    <td className="px-6 py-4">{order.transport_type}</td>
-                                                    <td className="px-6 py-4">{order.status}</td>
+
                                                     <td className="px-6 py-4">
                                                         <button
                                                             className="ml-4 font-medium text-red-600 dark:text-red-500 hover:underline"

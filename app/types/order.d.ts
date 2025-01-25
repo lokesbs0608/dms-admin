@@ -97,3 +97,24 @@ interface IOrderTable {
     pickedVehicleNumber: string;
     drsId?: string | null;
 }
+
+// Define the Item type
+interface Item {
+    itemId?: string;
+}
+
+// Define the OrderReference type
+interface IOrderReference {
+    parent_id?: string; // Reference to the Order ID
+    items?: Item[];     // Array of items in the order
+}
+
+// Define the Batch type
+interface IBatch {
+    _id?: string;                  // Unique ID of the batch
+    ordersIDs?: OrderReference[];  // Array of orders with items
+    createdBy?: string;            // User ID who created the batch
+    updatedBy?: string;           // User ID who last updated the batch
+    createdAt?: string;            // Creation timestamp
+    updatedAt?: string;            // Last update timestamp
+}

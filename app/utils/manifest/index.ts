@@ -32,6 +32,60 @@ const createOrder = async (data: Partial<IOrder>) => {
     }
 };
 
+
+// create hub
+const createBatch = async (data: Partial<IBatch[]>) => {
+    try {
+        const response = await instance.post(`/batch`, data);
+        handleToast({
+            res: { message: response?.data?.message }
+        });
+        return response?.data?.message
+    } catch (error) {
+        if ((error as ErrorWithResponse).response) {
+            handleToast({
+                err: {
+                    response: (error as ErrorWithResponse).response
+                }
+            });
+        }
+    }
+};
+// Get orders
+const getBatchOrder = async (url: string = "") => {
+    try {
+        const response = await instance.get(`/batch?${url}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching orders:", error);
+        if ((error as ErrorWithResponse).response) {
+            handleToast({
+                err: {
+                    response: (error as ErrorWithResponse).response
+                }
+            });
+        }
+    }
+};
+// Get orders
+const deleteBatchItems = async (batchId: string, id: string = "") => {
+    try {
+        const response = await instance.delete(`/batch/${batchId}/items/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching orders:", error);
+        if ((error as ErrorWithResponse).response) {
+            handleToast({
+                err: {
+                    response: (error as ErrorWithResponse).response
+                }
+            });
+        }
+    }
+};
+
+
+
 // Get orders
 const getManifests = async (url: string = "") => {
     try {
@@ -123,5 +177,8 @@ export {
     unarchiveHub,
     updateOrder,
     archiveHub,
-    createOrder
+    createOrder,
+    createBatch,
+    getBatchOrder,
+    deleteBatchItems
 };
