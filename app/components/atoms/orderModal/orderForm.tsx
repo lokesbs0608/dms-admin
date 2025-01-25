@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useAuth } from "@/app/hooks/useAuth";
 import { getCustomers } from "@/app/utils/customer";
 import { getHubs } from "@/app/utils/hub";
 import { createOrder, getOrderById, updateOrder } from "@/app/utils/orders";
@@ -28,7 +30,7 @@ interface Props {
 
 
 const OrderForm = ({ id }: Props) => {
-    console.log(id)
+    const { user } = useAuth()
     const [orderDetails, setOrderDetails] = useState<IOrder>({
         destinationHubId: "",
         docketNumber: "",
@@ -164,8 +166,12 @@ const OrderForm = ({ id }: Props) => {
             }
         };
 
+        if (user?.hub_id) {
+            setOrderDetails({ ...orderDetails, sourceHubId: user?.hub_id })
+        }
+
         fetchData();
-    }, [id]);
+    }, [id, user]);
 
 
 

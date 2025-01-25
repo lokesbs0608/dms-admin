@@ -14,6 +14,7 @@ interface User {
     attributes?: {
         role_numeric?: number;
     };
+    hub_id: string,
     [key: string]: unknown;
 }
 
@@ -56,6 +57,7 @@ export const useAuth = () => {
             handleError(err, "Login failed.");
         }
     };
+
 
     // Load user from cookies on mount and validate token
     useEffect(() => {

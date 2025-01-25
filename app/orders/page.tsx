@@ -9,6 +9,7 @@ const Orders = () => {
   const [filteredHubs, setFilteredHubs] = useState<IOrderTable[]>([]);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<IOrderTable | null>(null);
+  const [showItems, setShowItems] = useState('')
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchEmployees = async () => {
@@ -101,7 +102,8 @@ const Orders = () => {
           </thead>
           <tbody>
             {filteredHubs?.map((order) => (
-              <tr
+              <><tr
+                onClick={() => setShowItems(showItems === order?._id ? '' : order?._id || '')}
                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
                 key={order._id}
               >
@@ -124,14 +126,46 @@ const Orders = () => {
                 <td className="px-6 py-4">{order.status}</td>
                 <td className="px-6 py-4">
                   <p
-                    onClick={() => { setShowOrderModal(true); setSelectedOrder(order) }}
+                    onClick={() => { setShowOrderModal(true); setSelectedOrder(order); }}
                     className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
                   >
                     Edit
                   </p>
 
                 </td>
-              </tr>
+              </tr><tr>
+                  {showItems === order?._id && (
+
+                    <td colSpan={6} className="px-6 py-3">
+                      <table className="w-full border border-gray-300 mt-2">
+                        <thead>
+                          <tr className="bg-gray-100 dark:bg-gray-700">
+                            
+                            <th className="px-4 py-2 border">Item ID</th>
+                            <th className="px-4 py-2 border">Height</th>
+                            <th className="px-4 py-2 border">Length</th>
+                            <th className="px-4 py-2 border">Width</th>
+                            <th className="px-4 py-2 border">Weight</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {order?.items.map((item) => (
+                            <tr key={item.itemId} className="border-b">
+                              
+                              <td className="px-4 py-2 border">{item.itemId}</td>
+                              <td className="px-4 py-2 border">{item.dimension?.height || "N/A"}</td>
+                              <td className="px-4 py-2 border">{item.dimension?.length || "N/A"}</td>
+                              <td className="px-4 py-2 border">{item.dimension?.width || "N/A"}</td>
+                              <td className="px-4 py-2 border">{item.weight || "N/A"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </td>
+                  )}
+
+                </tr></>
+
             ))}
           </tbody>
         </table>

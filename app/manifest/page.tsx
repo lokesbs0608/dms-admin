@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import OrderDetailModal from "../components/atoms/orderModal";
 import { getManifests } from "../utils/manifest";
+import ManifestDetailsModal from "./manifestForm";
 
 const Manifest = () => {
-    const [hubs, setHubs] = useState<IOrderTable[]>([]);
-    const [filteredHubs, setFilteredHubs] = useState<IOrderTable[]>([]);
+    const [hubs, setHubs] = useState<IManifestTable[]>([]);
+    const [filteredHubs, setFilteredHubs] = useState<IManifestTable[]>([]);
     const [showOrderModal, setShowOrderModal] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState<IOrderTable | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<IManifestTable | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
     const fetchEmployees = async () => {
@@ -29,14 +29,10 @@ const Manifest = () => {
     // Filter hubs based on search query
     useEffect(() => {
         const filtered = hubs?.filter((hub) =>
-            hub?.docketNumber?.toLowerCase()?.includes(searchQuery?.toLowerCase())
+            hub?.loaderId?._id?.toLowerCase()?.includes(searchQuery?.toLowerCase())
         );
         setFilteredHubs(filtered);
     }, [searchQuery, hubs]);
-
-
-
-
 
     return (
         <div className="h-screen overflow-auto py-2 ">
@@ -65,17 +61,15 @@ const Manifest = () => {
                     <thead className="text-xs text-[#1d4ed8] uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
                             <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
-                                Docket No.
+                                Code
                             </th>
                             <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
-                                Consigner Name
+                                Loader Name
                             </th>
                             <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
-                                Consignee Name
+                                Source Name
                             </th>
-                            <th scope="col" className="px-6 py-3">
-                                Source
-                            </th>
+
                             <th scope="col" className="px-6 py-3">
                                 Source Hub Id
                             </th>
@@ -88,9 +82,7 @@ const Manifest = () => {
                             <th scope="col" className="px-6 py-3">
                                 Transport Type
                             </th>
-                            <th scope="col" className="px-6 py-3">
-                                Payment Method
-                            </th>
+
                             <th scope="col" className="px-6 py-3">
                                 Status
                             </th>
@@ -109,38 +101,43 @@ const Manifest = () => {
                                     scope="row"
                                     className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                                 >
-                                    {order.docketNumber}
+                                    {order.loaderId?.code}
                                 </th>
-                                <td className="px-6 py-4">{order.consignor?.name}</td>
-                                <td className="px-6 py-4">{order.consignee?.name}</td>
-                                <td className="px-6 py-4">{order.sourceHubId?.name}</td>
-                                <td className="px-6 py-4">{order.sourceHubId?.hub_code}</td>
+                                <td className="px-6 py-4">{order.loaderId?.name}</td>
+                                <td className="px-6 py-4">{order.sourceHubID?.name}</td>
+                                <td className="px-6 py-4">{order.sourceHubID?.hub_code}</td>
+                                <td className="px-6 py-4">{order.destinationHubID?.name}</td>
                                 {/* <td className="px-6 py-4">{order.consignor?.city}</td> */}
-                                <td className="px-6 py-4">{order.destinationHubId?.name}</td>
-                                <td className="px-6 py-4">{order.destinationHubId?.hub_code}</td>
+                                <td className="px-6 py-4">
+                                    {order.destinationHubID?.hub_code}
+                                </td>
                                 {/* <td className="px-6 py-4">{order.consignee?.city}</td> */}
                                 <td className="px-6 py-4">{order.transport_type}</td>
-                                <td className="px-6 py-4">{order.payment_method}</td>
                                 <td className="px-6 py-4">{order.status}</td>
                                 <td className="px-6 py-4">
                                     <p
-                                        onClick={() => { setShowOrderModal(true); setSelectedOrder(order) }}
+                                        onClick={() => {
+                                            setShowOrderModal(true);
+                                            setSelectedOrder(order);
+                                        }}
                                         className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
                                     >
                                         Edit
                                     </p>
-
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
+            {showOrderModal && (
 
-
-
-            <OrderDetailModal isOpen={showOrderModal} onClose={() => setShowOrderModal(false)} id={selectedOrder?._id} />
-
+                <ManifestDetailsModal
+                    isOpen={showOrderModal}
+                    onClose={() => setShowOrderModal(false)}
+                    id={selectedOrder?._id}
+                />
+            )}
 
 
         </div>
