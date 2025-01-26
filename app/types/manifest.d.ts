@@ -2,6 +2,8 @@
 
 interface Batch {
     _id: string;
+    items_count: string
+    docketNumber?: string
     // Add the other fields from your Batch model if needed
 }
 
@@ -14,8 +16,8 @@ interface IManifest {
     gpsLocation: string;
     estimatedDeliveryDate: string;  // You can change this to Date if using Date objects
     driverContactNumber: string;
-    orderIDs: string[];
-    batchIDs: string[];
+    orderIDs: Batch[];
+    batchIDs: Batch[];
     no_ofBatch: string;
     no_ofIndividualOrder: string;
     totalPcs: string;
