@@ -9,6 +9,7 @@ import {
     deleteBatchItems,
     getBatchOrder,
 } from "../utils/manifest";
+import toast from "react-hot-toast";
 
 interface Props {
     isOpen: boolean;
@@ -30,7 +31,6 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [orders, setOrders] = useState<IOrderTable[]>([]);
     const [isChecked, setIsChecked] = useState(false);
-
 
     const [manifestData, setManifestData] = useState<IManifest>({
         actualWeight: "",
@@ -176,6 +176,8 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
                 // Set the state with the transformed batch order data
                 setBatchOrder(primary);
+
+
             }
         } catch (error) {
             console.log(error);
@@ -191,7 +193,35 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
     }, [orders, searchQuery]);
 
     const createBatchOrder = (parentID: string, item: Item) => {
-        console.log(parentID, item?.itemId);
+        const orderIDItems = manifestData?.orderIDs?.filter((order) => order?._id); // Get all matching orders
+        const filterOrderItems = filteredOrder?.filter((order) => orderIDItems.some(o => o._id === order._id));
+
+        // Find the order in orderIDItems that matches the parentID
+        const matchingOrder = orderIDItems.find(o => o._id?.toString() === parentID);
+        const matchingFilterOrder = filterOrderItems?.find(order => order._id === parentID);
+
+        // Get the total count of items for this specific parentID from orderIDItems
+        const orderItemsCount = matchingOrder ? +matchingOrder.items_count || 0 : 0;
+
+        // Get total count of items for this specific parentID from batchOrder
+        const batchItemsCount = batchOrder?.reduce((total, batch) => {
+            return total + (batch.ordersIDs?.reduce((sum, order) =>
+                order.parent_id === parentID ? sum + (order.items?.length || 0) : sum
+                , 0) || 0);
+        }, 0) || 0;
+
+        // Get total count of items for this specific parentID from filteredOrder
+        const filterOrderItemsCount = matchingFilterOrder ? matchingFilterOrder.items.length || 0 : 0;
+
+        console.log(`ParentID: ${parentID} | Total: ${orderItemsCount + batchItemsCount} | Allowed: ${filterOrderItemsCount}`);
+
+        // ✅ FIX: Allow batch if manifest data count is 0 (items_count === 0)
+        if (orderItemsCount > 0 && (orderItemsCount + batchItemsCount) >= filterOrderItemsCount) {
+            return toast.error(`Batch Cannot be created for Parent ID: ${parentID} due to docket number already in manifest Table`);
+        }
+
+
+
         setBatchOrder((prevBatchOrder: IBatch[]) => {
             // Check if there is an order with the given parentID in the batch
             const existingOrder = prevBatchOrder.find((batch) =>
@@ -310,8 +340,6 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                 })
             );
 
-            console.log(":Batch Order", batchOrder);
-
             // Initialize a Map with existing manifest data
             const updatedOrderIDsMap = new Map<string, Batch>(
                 (manifestData?.orderIDs || []).map((order: Batch) => [order._id, order])
@@ -367,7 +395,6 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             };
 
             setManifestData(updatedManifestData);
-            console.log("Updated Manifest Data:", updatedManifestData);
         } catch (error) {
             console.error("Error processing order IDs:", error);
             throw new Error("Failed to process order IDs");
@@ -422,7 +449,10 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
             // Update the state
             setManifestData(updatedManifestData);
-            console.log("Updated Manifest Data after batch deletion:", updatedManifestData);
+            console.log(
+                "Updated Manifest Data after batch deletion:",
+                updatedManifestData
+            );
         } catch (error) {
             console.error("Error deleting batch IDs:", error);
             throw new Error("Failed to delete batch IDs");
@@ -431,7 +461,9 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
     const checkDuplicateOrderId = (orderId: string): boolean => {
         // Check if the orderID exists in the manifestData orderIDs array
-        const isDuplicate = manifestData?.orderIDs?.some((order: { _id: string }) => order._id === orderId);
+        const isDuplicate = manifestData?.orderIDs?.some(
+            (order: { _id: string }) => order._id === orderId
+        );
 
         return isDuplicate; // Returns true if duplicate found, false otherwise
     };
@@ -439,7 +471,9 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
     // Function to check if all filtered orders exist in the orderIDs
     const checkAllOrdersExist = () => {
         return filteredOrder.every((order) =>
-            manifestData.orderIDs.some((existingOrder) => existingOrder._id === order._id)
+            manifestData.orderIDs.some(
+                (existingOrder) => existingOrder._id === order._id
+            )
         );
     };
 
@@ -450,7 +484,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
     }, [filteredOrder, manifestData.orderIDs]);
 
     // Handle checkbox change
-    const handleCheckboxChange = (e: { target: { checked: boolean; }; }) => {
+    const handleCheckboxChange = (e: { target: { checked: boolean } }) => {
         if (e.target.checked) {
             // If checked, add the filtered orders to manifestData
             handleOrderIdsToManifest(filteredOrder);
@@ -462,6 +496,69 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             });
         }
     };
+
+    const validateAllCounts = () => {
+        // Get total count from orderIDs
+        const orderItemsCount = manifestData?.orderIDs?.reduce(
+            (total, order) => total + (+order.items_count || 0),
+            0
+        ) || 0;
+
+        // Get total count from batchOrder
+        const batchItemsCount = batchOrder?.reduce((total, batch) => {
+            return total + (batch.ordersIDs?.reduce((sum, order) => sum + (order.items?.length || 0), 0) || 0);
+        }, 0) || 0;
+
+        // Call this function to find unique parent IDs
+        const uniqueIds = findUniqueParentIDs();
+
+        // Calculate the total item count for these unique parent IDs from filteredOrder
+        const uniqueParentItemsCount = uniqueIds.reduce((total, parentID) => {
+            const filteredItemsCount = filteredOrder
+                ?.filter(order => order._id === parentID) // Filter orders by parentID
+                .reduce((sum, order) => sum + (order.items?.length || 0), 0) || 0;
+
+            return total + filteredItemsCount;
+        }, 0);
+        // Get total count from filteredOrder
+        const orderListItemsCount = filteredOrder?.reduce(
+            (total, order) => total + (order.items?.length || 0),
+            0
+        ) || 0;
+
+        console.log(`OrderIDs Items Count: ${orderItemsCount}`);
+        console.log(`BatchOrder Items Count: ${batchItemsCount}`);
+        console.log(`FilteredOrder Items Count: ${uniqueParentItemsCount}`);
+
+        // ✅ Condition: The sum of orderItemsCount and batchItemsCount should be <= orderListItemsCount
+        if (orderItemsCount + batchItemsCount <= orderListItemsCount) {
+            return true;
+        }
+
+        toast.error("Batch Cannot be created due to count mismatch.");
+    };
+
+    const findUniqueParentIDs = () => {
+        // Extract parent IDs from orderIDs (manifestData)
+        const orderParentIDs = new Set(manifestData?.orderIDs?.map(order => order._id));
+
+        // Extract parent IDs from batchOrder
+        const batchParentIDs = new Set(batchOrder?.flatMap(batch => batch.ordersIDs?.map(order => order.parent_id) || []));
+
+        // Find intersection (common parent IDs in both orderIDs and batchOrder)
+        const commonParentIDs = [...orderParentIDs].filter(parentID => batchParentIDs.has(parentID));
+
+        console.log("Unique Parent IDs found in both orderIDs and batchOrder:", commonParentIDs);
+
+        return commonParentIDs;
+    };
+
+    useEffect(() => {
+        validateAllCounts()
+    }, [manifestData])
+
+
+
 
     if (!isOpen) return null;
 
@@ -706,7 +803,6 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                             type="checkbox"
                                                             checked={isChecked}
                                                             onChange={handleCheckboxChange}
-
                                                         />
                                                     </label>
                                                 </th>
@@ -749,7 +845,10 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                                             : deleteOrderIds([order?._id || ""])
                                                                     }
                                                                     className="cursor-pointer"
-                                                                    checked={checkDuplicateOrderId(order?._id || '') || false}
+                                                                    checked={
+                                                                        checkDuplicateOrderId(order?._id || "") ||
+                                                                        false
+                                                                    }
                                                                 />
                                                             </label>
                                                         </th>
@@ -930,7 +1029,13 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                         </th>
 
                                                         <td className="px-6 py-4">
-                                                            <button type="button" onClick={() => deleteBatchIds([order?._id || ''])} className="ml-4 font-medium text-red-600 dark:text-red-500 hover:underline">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    deleteBatchIds([order?._id || ""])
+                                                                }
+                                                                className="ml-4 font-medium text-red-600 dark:text-red-500 hover:underline"
+                                                            >
                                                                 Remove
                                                             </button>
                                                         </td>
