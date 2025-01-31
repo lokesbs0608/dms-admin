@@ -10,6 +10,7 @@ interface IAddressDetails {
 }
 
 interface ItemDetails {
+    _id: string;
     weight: number | string | null;
     weightKg?: number | string;
     dimension: {
@@ -107,6 +108,7 @@ interface Item {
 interface IOrderReference {
     parent_id?: string; // Reference to the Order ID
     items?: Item[];     // Array of items in the order
+    total_weight?: number | string | null;
 }
 
 // Define the Batch type

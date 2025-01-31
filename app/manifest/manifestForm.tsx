@@ -21,6 +21,7 @@ interface Batch {
     _id: string;
     items_count: string;
     docketNumber?: string;
+    total_weight?: number | string
     // Add the other fields from your Batch model if needed
 }
 
@@ -149,16 +150,35 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
                         batch?.ordersIDs?.forEach(
                             (order: { parent_id: { _id: string }; items: [] }) => {
+
+                                const parentId = order?.parent_id?._id;
+                                const Items = order?.items;
+                                const filterOrderByParentId = orders?.filter((items) => items?._id === parentId);
+
+                                let totalWeight = 0; // Initialize weight counter
+
+                                filterOrderByParentId?.forEach((ele) => {
+                                    ele?.items?.forEach((exitingItem) => {
+                                        Items?.forEach((batchItem) => {
+                                            if (exitingItem?.itemId === batchItem?.itemId || '') {
+                                                totalWeight += Number(exitingItem?.weight) || 0; // Ensure weight is a number
+                                            }
+                                        });
+                                    });
+                                });
                                 const ordersIDs = {
                                     parent_id: order.parent_id?._id, // Assuming parent_id is part of the order
                                     items: order.items, // Assuming items is an array in the order
                                     _id: batch._id, // Adding batch _id to the orders
                                     color: color, // Adding color to each batch order
+                                    total_weight: totalWeight
                                 };
                                 temp.push(ordersIDs); // Push the formatted order to the temporary array
+                                console.log(order,)
                                 batchIDs.push({
                                     _id: batch?._id,
                                     items_count: order?.items?.length.toString(),
+                                    total_weight: totalWeight.toString()
                                 });
                             }
                         );
@@ -203,6 +223,8 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
         // Get the total count of items for this specific parentID from orderIDItems
         const orderItemsCount = matchingOrder ? +matchingOrder.items_count || 0 : 0;
+
+
 
         // Get total count of items for this specific parentID from batchOrder
         const batchItemsCount = batchOrder?.reduce((total, batch) => {
@@ -273,6 +295,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                 const newOrder: IOrderReference = {
                     parent_id: parentID,
                     items: [item],
+                    // total_weight: item?.reduce((sum, item) => sum + (Number(item?.weight) || 0), 0)
                 };
                 const newBatch: IBatch = { ordersIDs: [newOrder] };
                 return [...prevBatchOrder, newBatch];
@@ -342,10 +365,11 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
         try {
 
             const formattedOrderIDs = orders.map(
-                (order: { _id: string; docketNumber: string; items: Item[] }) => ({
+                (order: { _id: string; docketNumber: string; items: ItemDetails[] }) => ({
                     _id: order._id,
                     items: order?.items || [],
                     docketNumber: order?.docketNumber,
+                    total_weight: order?.items?.reduce((sum, item) => sum + (Number(item?.weight) || 0), 0)
                 })
             );
 
@@ -356,7 +380,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
             // Process each order and update the map
             formattedOrderIDs.forEach((order) => {
-                const { _id, items: newItems, docketNumber } = order;
+                const { _id, items: newItems, docketNumber, total_weight } = order;
 
                 // Check if an existing batch matches the `_id`
                 const batchOrdersIDs = batchOrder?.[0]?.ordersIDs || [];
@@ -381,6 +405,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                             _id,
                             items_count: uniqueItems.length.toString(),
                             docketNumber,
+                            total_weight: uniqueItems?.reduce((sum, item) => sum + (Number(item?.weight) || 0), 0)
                         });
                     }
                 } else {
@@ -390,6 +415,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                         _id,
                         items_count: newItems.length.toString(),
                         docketNumber,
+                        total_weight
                     });
                 }
             });
@@ -509,31 +535,59 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
     const validateAllCounts = async () => {
         // Get total count from orderIDs
-        const orderItemsCount = manifestData?.orderIDs?.reduce(
-            (total, order) => total + (+order.items_count || 0),
-            0
-        ) || 0;
+        const orderItemsCount =
+            manifestData?.orderIDs?.reduce(
+                (total, order) => total + (+order.items_count || 0),
+                0
+            ) || 0;
 
         // Get total count from batchOrder
-        const batchItemsCount = batchOrder?.reduce((total, batch) => {
-            return total + (batch.ordersIDs?.reduce((sum, order) => sum + (order.items?.length || 0), 0) || 0);
-        }, 0) || 0;
+        const batchItemsCount =
+            batchOrder?.reduce((total, batch) => {
+                return (
+                    total +
+                    (batch.ordersIDs?.reduce((sum, order) => sum + (order.items?.length || 0), 0) || 0)
+                );
+            }, 0) || 0;
+
+        // ✅ Correcting batchWeight Calculation
+        const batchWeight =
+            batchOrder?.reduce((total, batch) => {
+                return (
+                    total +
+                    (batch.ordersIDs?.reduce((sum, order) => sum + (Number(order.total_weight) || 0), 0) || 0)
+                );
+            }, 0) || 0;
+
+        // Get total weight from orderIDs
+        const orderItemsWeight =
+            manifestData?.orderIDs?.reduce(
+                (total, order) => total + (Number(order.total_weight) || 0),
+                0
+            ) || 0;
 
         // Call this function to find unique parent IDs
         const uniqueIds = await findMergedParentIDs();
-        console.log('Received Unique IDs:', uniqueIds);
+        console.log("Received Unique IDs:", uniqueIds);
 
         // ✅ Get total item count for ALL orders (not just filtered by ID)
-        const orderListItemsCount = filteredOrder?.reduce(
-            (total, order) => total + (order.items?.length || 0),
-            0
-        ) || 0;
+        const orderListItemsCount =
+            filteredOrder?.reduce((total, order) => total + (order.items?.length || 0), 0) || 0;
 
         console.log(`OrderIDs Items Count: ${orderItemsCount}`);
         console.log(`BatchOrder Items Count: ${batchItemsCount}`);
-        console.log(`FilteredOrder Items Count: ${orderListItemsCount}`);  // Should now be 15 instead of 11
-        setManifestData({ ...manifestData, no_ofBatch: batchItemsCount.toString(), no_ofIndividualOrder: orderItemsCount.toString() })
+        console.log(`FilteredOrder Items Count: ${orderListItemsCount}`); // Should now be 15 instead of 11
+        console.log(`Batch Weight: ${batchWeight}`);
+        console.log(`OrderIDs Weight: ${orderItemsWeight}`);
+
+        setManifestData({
+            ...manifestData,
+            no_ofBatch: batchItemsCount.toString(),
+            no_ofIndividualOrder: orderItemsCount.toString(),
+            actualWeight: (batchWeight + orderItemsWeight).toFixed(3).toString(), // ✅ Ensure it's a string for state
+        });
     };
+
 
     const findMergedParentIDs = async () => {
         // Extract parent IDs from orderIDs (manifestData)
@@ -743,6 +797,8 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                             <div>
                                 <h2 className="font-bold mb-2">Actual Weight</h2>
                                 <input
+                                    value={manifestData?.actualWeight}
+                                    disabled
                                     onChange={(e) =>
                                         setManifestData({
                                             ...manifestData,
@@ -764,12 +820,12 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                         })
                                     }
                                     className="w-full p-2 border rounded mb-4"
-                                    placeholder="Estimated Delivery Date"
+                                    placeholder="Loader weight"
                                     type="number"
                                 />
                             </div>
                             <div>
-                                No of Batch : {batchOrder?.length} <br />   Batch Order Pcs : {manifestData?.no_ofBatch} <br />  Individual Order Pcs :   {manifestData?.no_ofIndividualOrder} <br /> Total Pcs :  {+manifestData?.no_ofBatch + +manifestData?.no_ofIndividualOrder}
+                                No of Batch : {batchOrder?.length} <br />   No of Batch : {batchOrder?.length} <br />   Batch Order Pcs : {manifestData?.no_ofBatch} <br />  Individual Order Pcs :   {manifestData?.no_ofIndividualOrder} <br /> Total Pcs :  {+manifestData?.no_ofBatch + +manifestData?.no_ofIndividualOrder}
                             </div>
                         </div>
                         <div>
@@ -1005,6 +1061,9 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                 <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
                                                     No Of Pieces
                                                 </th>
+                                                <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
+                                                    Total Weight
+                                                </th>
 
                                                 <th scope="col" className="px-6 py-3">
                                                     Action
@@ -1029,6 +1088,9 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                             className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                                                         >
                                                             {order?.items_count}
+                                                        </th>
+                                                        <th>
+                                                            {order?.total_weight}
                                                         </th>
 
                                                         <td className="px-6 py-4">
@@ -1062,6 +1124,9 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                             className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                                                         >
                                                             {order?.items_count}
+                                                        </th>
+                                                        <th>
+                                                            {order?.total_weight}
                                                         </th>
 
                                                         <td className="px-6 py-4">

@@ -4,6 +4,7 @@ interface Batch {
     _id: string;
     items_count: string
     docketNumber?: string
+    total_weight?: number | string
     // Add the other fields from your Batch model if needed
 }
 
