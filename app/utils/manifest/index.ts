@@ -83,6 +83,22 @@ const deleteBatchItems = async (batchId: string, id: string = "") => {
         }
     }
 };
+const deleteBatch = async (batchId: string,) => {
+    try {
+        const response = await instance.delete(`/batch/${batchId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching orders:", error);
+        if ((error as ErrorWithResponse).response) {
+            handleToast({
+                err: {
+                    response: (error as ErrorWithResponse).response
+                }
+            });
+        }
+    }
+};
+
 
 
 
@@ -180,5 +196,6 @@ export {
     createOrder,
     createBatch,
     getBatchOrder,
-    deleteBatchItems
+    deleteBatchItems,
+    deleteBatch
 };

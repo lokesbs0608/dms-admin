@@ -6,6 +6,7 @@ import { getLoader } from "../utils/loader";
 import { useAuth } from "../hooks/useAuth";
 import {
     createBatch,
+    deleteBatch,
     deleteBatchItems,
     getBatchOrder,
 } from "../utils/manifest";
@@ -326,11 +327,19 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             console.log(error);
         }
     };
+    const handleRemoveBatches = async (batchId: string,) => {
+        try {
+            await deleteBatch(batchId);
+            fetchBatchOrder();
+        } catch (error) {
+            console.log(error);
+        }
+    };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleOrderIdsToManifest = async (orders: any[]) => {
+
         try {
-            console.log(":Formatted Order", orders);
 
             const formattedOrderIDs = orders.map(
                 (order: { _id: string; docketNumber: string; items: Item[] }) => ({
@@ -428,7 +437,8 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             throw new Error("Failed to delete order IDs");
         }
     };
-    const deleteBatchIds = (batchIdsToDelete: string[]) => {
+    const deleteBatchIds = async (batchIdsToDelete: string[]) => {
+        await handleRemoveBatches(batchIdsToDelete[0])
         try {
             console.log("Batch IDs to delete:", batchIdsToDelete);
 
@@ -497,7 +507,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
         }
     };
 
-    const validateAllCounts = () => {
+    const validateAllCounts = async () => {
         // Get total count from orderIDs
         const orderItemsCount = manifestData?.orderIDs?.reduce(
             (total, order) => total + (+order.items_count || 0),
@@ -510,17 +520,10 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
         }, 0) || 0;
 
         // Call this function to find unique parent IDs
-        const uniqueIds = findUniqueParentIDs();
+        const uniqueIds = await findMergedParentIDs();
+        console.log('Received Unique IDs:', uniqueIds);
 
-        // Calculate the total item count for these unique parent IDs from filteredOrder
-        const uniqueParentItemsCount = uniqueIds.reduce((total, parentID) => {
-            const filteredItemsCount = filteredOrder
-                ?.filter(order => order._id === parentID) // Filter orders by parentID
-                .reduce((sum, order) => sum + (order.items?.length || 0), 0) || 0;
-
-            return total + filteredItemsCount;
-        }, 0);
-        // Get total count from filteredOrder
+        // ✅ Get total item count for ALL orders (not just filtered by ID)
         const orderListItemsCount = filteredOrder?.reduce(
             (total, order) => total + (order.items?.length || 0),
             0
@@ -528,34 +531,31 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
         console.log(`OrderIDs Items Count: ${orderItemsCount}`);
         console.log(`BatchOrder Items Count: ${batchItemsCount}`);
-        console.log(`FilteredOrder Items Count: ${uniqueParentItemsCount}`);
-
-        // ✅ Condition: The sum of orderItemsCount and batchItemsCount should be <= orderListItemsCount
-        if (orderItemsCount + batchItemsCount <= orderListItemsCount) {
-            return true;
-        }
-
-        toast.error("Batch Cannot be created due to count mismatch.");
+        console.log(`FilteredOrder Items Count: ${orderListItemsCount}`);  // Should now be 15 instead of 11
+        setManifestData({ ...manifestData, no_ofBatch: batchItemsCount.toString(), no_ofIndividualOrder: orderItemsCount.toString() })
     };
 
-    const findUniqueParentIDs = () => {
+    const findMergedParentIDs = async () => {
         // Extract parent IDs from orderIDs (manifestData)
-        const orderParentIDs = new Set(manifestData?.orderIDs?.map(order => order._id));
+        const orderParentIDs = manifestData?.orderIDs?.map(order => order._id) || [];
 
         // Extract parent IDs from batchOrder
-        const batchParentIDs = new Set(batchOrder?.flatMap(batch => batch.ordersIDs?.map(order => order.parent_id) || []));
+        const batchParentIDs = manifestData?.batchIDs?.map(order => order._id) || [];
 
-        // Find intersection (common parent IDs in both orderIDs and batchOrder)
-        const commonParentIDs = [...orderParentIDs].filter(parentID => batchParentIDs.has(parentID));
+        // Use a Set to ensure unique IDs while merging
+        const uniqueIDs = new Set([...orderParentIDs, ...batchParentIDs]);
 
-        console.log("Unique Parent IDs found in both orderIDs and batchOrder:", commonParentIDs);
-
-        return commonParentIDs;
+        console.log("Merged Unique Parent IDs (Duplicates removed):", [...uniqueIDs]);
+        return [...uniqueIDs];
     };
 
+
     useEffect(() => {
-        validateAllCounts()
-    }, [manifestData])
+        validateAllCounts();
+        console.log(batchOrder)
+    }, [manifestData?.batchIDs, manifestData?.orderIDs])
+
+
 
 
 
@@ -767,6 +767,9 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                     placeholder="Estimated Delivery Date"
                                     type="number"
                                 />
+                            </div>
+                            <div>
+                                No of Batch : {batchOrder?.length} <br />   Batch Order Pcs : {manifestData?.no_ofBatch} <br />  Individual Order Pcs :   {manifestData?.no_ofIndividualOrder} <br /> Total Pcs :  {+manifestData?.no_ofBatch + +manifestData?.no_ofIndividualOrder}
                             </div>
                         </div>
                         <div>
