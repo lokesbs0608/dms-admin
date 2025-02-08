@@ -103,12 +103,13 @@ const Orders = () => {
           <tbody>
             {filteredHubs?.map((order) => (
               <><tr
-                onClick={() => setShowItems(showItems === order?._id ? '' : order?._id || '')}
+
                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
                 key={order._id}
               >
                 <th
                   scope="row"
+                  onClick={() => setShowItems(showItems === order?._id ? '' : order?._id || '')}
                   className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                 >
                   {order.docketNumber}
@@ -123,7 +124,19 @@ const Orders = () => {
                 {/* <td className="px-6 py-4">{order.consignee?.city}</td> */}
                 <td className="px-6 py-4">{order.transport_type}</td>
                 <td className="px-6 py-4">{order.payment_method}</td>
-                <td className="px-6 py-4">{order.status}</td>
+                <td className="px-6 py-4">
+                  <select
+                    value={order?.status}
+                    disabled={order?.status ==='Manifested'}
+                    className={`px-3 py-2 border-2 rounded-md w-full focus:outline-none transition-all ${statusOptions.find((opt) => opt.value === order?.status)?.color || "text-gray-700 border-gray-300"}`}
+                  >
+                    {statusOptions.map((option) => (
+                      <option key={option.value} className={`${option?.color || "text-gray-700 border-gray-300"}`} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </td>
                 <td className="px-6 py-4">
                   <p
                     onClick={() => { setShowOrderModal(true); setSelectedOrder(order); }}
@@ -182,3 +195,17 @@ const Orders = () => {
 };
 
 export default Orders;
+
+const statusOptions = [
+  { label: "Picked", value: "Picked", color: "text-blue-600 border-blue-600" },
+  { label: "Reached Source Branch", value: "Reached_Source_Branch", color: "text-green-600 border-green-600" },
+  { label: "Reached Source Hub", value: "Reached_Source_Hub", color: "text-teal-600 border-teal-600" },
+  { label: "In Transit", value: "In Transit", color: "text-yellow-600 border-yellow-600" },
+  { label: "Reached Destination Hub", value: "Reached Destination Hub", color: "text-orange-600 border-orange-600" },
+  { label: "Reached Destination Branch", value: "Reached Destination Branch", color: "text-orange-500 border-orange-500" },
+  { label: "Pending", value: "Pending", color: "text-gray-600 border-gray-600" },
+  { label: "Out For Delivery", value: "Out_For_Delivery", color: "text-purple-600 border-purple-600" },
+  { label: "Delivered", value: "Delivered", color: "text-green-700 border-green-700" },
+  { label: "Cancelled", value: "Cancelled", color: "text-red-600 border-red-600" },
+  { label: "Manifested", value: "Manifested", color: "text-indigo-600 border-indigo-600" },
+];

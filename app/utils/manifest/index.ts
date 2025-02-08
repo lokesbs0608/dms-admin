@@ -53,8 +53,8 @@ const updateManifest = async (id: string, data: Partial<IManifest>) => {
 // Get orders
 const getManifestById = async (id: string) => {
     try {
-        const response = await instance.get(`/manifest?${id}`);
-        return response.data[0];
+        const response = await instance.get(`/manifest/${id}`);
+        return response.data;
     } catch (error) {
         console.error("Error fetching manifest:", error);
         if ((error as ErrorWithResponse).response) {
@@ -103,6 +103,22 @@ const getManifests = async (url: string = "") => {
     }
 };
 
+// Get orders
+const updateManifestStatus = async (id: string, status: string) => {
+    try {
+        const response = await instance.put(`/manifest/${id}/status/${status}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching orders:", error);
+        if ((error as ErrorWithResponse).response) {
+            handleToast({
+                err: {
+                    response: (error as ErrorWithResponse).response
+                }
+            });
+        }
+    }
+};
 
 
 
@@ -114,4 +130,5 @@ export {
     createManifest,
     getManifestById,
     deleteOrderIds,
+    updateManifestStatus
 };

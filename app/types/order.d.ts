@@ -99,7 +99,8 @@ interface IOrderTable {
     | "Pending"
     | "Out_For_Delivery"
     | "Delivered"
-    | "Cancelled";
+    | "Cancelled"
+    | "Manifested";
     deliveredLocation?: string | null;
     deliveredDate?: Date | null;
     deliveredTime?: string | null;

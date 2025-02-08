@@ -80,9 +80,6 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                         setManifestData({
                             ...manifestData,
                             ...resp,
-                            loaderId: resp?.loaderId?._id,
-                            sourceHubID: resp?.sourceHubID?._id,
-                            destinationHubID: resp?.destinationHubID?._id,
                         });
                     }
                 }
@@ -157,7 +154,6 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
         try {
             const filterString = `status=Pending&status=Picked&sourceHubId=${manifestData.sourceHubID || ""}`;
             const resp = await deleteOrderIds(id || "", idsToDelete);
-            console.log(resp, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
             if (resp?.message === 'Order removed from manifest and status updated successfully.') {
                 toast.success('Order removed from manifest and status updated successfully')
                 setManifestData({
@@ -260,7 +256,12 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
     const handleManifestOrder = async (e: { preventDefault: () => void }) => {
         e.preventDefault();
         if (!manifestData?.orderIDs) return toast.error('No order Selected');
-        if (manifestData?.totalWeight >= manifestData?.actualWeight) return toast.error('Please check Loader weight')
+        const totalWeight = parseFloat(manifestData?.totalWeight) || 0;
+        const actualWeight = parseFloat(manifestData?.actualWeight) || 0;
+
+        if (totalWeight >= actualWeight) {
+            return toast.error('Please check Loader weight');
+        }
 
         if (id) {
             try {
@@ -707,7 +708,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                             <button
                                                                 type="button"
                                                                 onClick={() =>
-                                                                    order?.items[0].status === "Manifested"
+                                                                    order?.items[0].status !== "Pending"
                                                                         ? deleteOrder(order?._id)
                                                                         : deleteOrderIdsFromTable([order?._id])
                                                                 }
