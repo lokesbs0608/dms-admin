@@ -140,7 +140,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             // Update manifest data with the new orderIDs
             const updatedManifestData = {
                 ...manifestData,
-                orderIDs: formattedOrderIDs,
+                orderIDs: [...manifestData?.orderIDs, ...formattedOrderIDs],
             };
 
             setManifestData(updatedManifestData);
@@ -153,22 +153,26 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
     const deleteOrder = async (idsToDelete: string) => {
         try {
             const filterString = `status=Pending&status=Picked&sourceHubId=${manifestData.sourceHubID || ""}`;
-            const resp = await deleteOrderIds(id || "", idsToDelete);
-            if (resp?.message === 'Order removed from manifest and status updated successfully.') {
-                toast.success('Order removed from manifest and status updated successfully')
-                setManifestData({
-                    ...manifestData,
-                    orderIDs: resp?.updatedManifest?.orderIds
 
-                })
-                console.log(resp?.updatedManifest?.orderIds)
+            const resp = await deleteOrderIds(manifestData._id || "", idsToDelete);
+
+            if (resp?.message === "Order removed from manifest and status updated successfully.") {
+                toast.success("Order removed from manifest and status updated successfully");
+
+                setManifestData((prevData) => ({
+                    ...prevData,
+                    orderIDs: resp?.updatedManifest?.orderIDs || [], // Ensure it updates correctly
+                }));
+
+                console.log(resp?.updatedManifest?.orderIDs, "Updated order IDs");
+
                 fetchOrder(filterString);
             }
         } catch (error) {
             console.error("Error deleting order IDs:", error);
-            throw new Error("Failed to delete order IDs");
         }
     };
+
     const deleteOrderIdsFromTable = (idsToDelete: string[]) => {
         try {
             console.log("IDs to delete:", idsToDelete);
@@ -259,7 +263,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
         const totalWeight = parseFloat(manifestData?.totalWeight) || 0;
         const actualWeight = parseFloat(manifestData?.actualWeight) || 0;
 
-        if (totalWeight >= actualWeight) {
+        if (totalWeight > actualWeight) {
             return toast.error('Please check Loader weight');
         }
 
@@ -291,6 +295,20 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             }
         }
     };
+
+    const checkDuplicateOrderId = (orderId: string): boolean => {
+        // Check if the orderID exists in the manifestData orderIDs array
+        const isDuplicate = manifestData?.orderIDs?.some(
+            (order: { _id: string }) => order._id === orderId
+        );
+
+        return isDuplicate; // Returns true if duplicate found, false otherwise
+    };
+    const deleteFromManifestTable = (orderId: string) => {
+        const updatedOrders = manifestData.orderIDs.filter((item) => item?._id !== orderId);
+        setManifestData({ ...manifestData, orderIDs: updatedOrders });
+    };
+
 
     if (!isOpen) return null;
 
@@ -570,6 +588,26 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                                 key={`${order._id}_${index}_order`}
                                                                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
                                                             >
+                                                                <th
+                                                                    scope="col"
+                                                                    className="px-6 py-3 text-[#1d4ed8]"
+                                                                >
+                                                                    <label>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            onChange={(e) =>
+                                                                                e.target?.checked
+                                                                                    ? handleOrderIdsToManifest([order])
+                                                                                    : deleteFromManifestTable(order?._id || '')
+                                                                            }
+                                                                            className="cursor-pointer"
+                                                                            checked={
+                                                                                checkDuplicateOrderId(order?._id || "") ||
+                                                                                false
+                                                                            }
+                                                                        />
+                                                                    </label>
+                                                                </th>
                                                                 <th
                                                                     onClick={() =>
                                                                         setShowItems(

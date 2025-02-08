@@ -139,6 +139,7 @@ const Orders = () => {
                 </td>
                 <td className="px-6 py-4">
                   <p
+                   hidden={order?.status ==='Manifested'}
                     onClick={() => { setShowOrderModal(true); setSelectedOrder(order); }}
                     className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
                   >
