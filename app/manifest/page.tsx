@@ -74,7 +74,7 @@ const Manifest = () => {
                                 Source Hub Id
                             </th>
                             <th scope="col" className="px-6 py-3">
-                                Destination
+                                Destination Name
                             </th>
                             <th scope="col" className="px-6 py-3">
                                 Destination Hub Id
@@ -134,7 +134,7 @@ const Manifest = () => {
 
                 <ManifestDetailsModal
                     isOpen={showOrderModal}
-                    onClose={() => setShowOrderModal(false)}
+                    onClose={() => { setShowOrderModal(false); setSelectedOrder(null) }}
                     id={selectedOrder?._id}
                 />
             )}

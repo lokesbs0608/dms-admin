@@ -10,7 +10,7 @@ interface IAddressDetails {
 }
 
 interface ItemDetails {
-    _id: string;
+    _id?: string;
     weight: number | string | null;
     weightKg?: number | string;
     dimension: {
@@ -20,6 +20,18 @@ interface ItemDetails {
     };
     price?: string;
     itemId: string;
+    status:
+    | "Picked"
+    | "Reached_Source_Branch"
+    | "Reached_Source_Hub"
+    | "In Transit"
+    | "Reached_Destination_Hub"
+    | "Reached_Destination_Branch"
+    | "Pending"
+    | "Out_For_Delivery"
+    | "Delivered"
+    | "Cancelled"
+    | "Manifested";
 }
 
 interface IHistoryDetails {
@@ -30,7 +42,7 @@ interface IHistoryDetails {
 }
 
 interface IOrder {
-    _id?: string,
+    _id?: string;
     consignorId?: string;
     consigneeId?: string;
     consignor?: IAddressDetails;
@@ -65,7 +77,7 @@ interface IOrder {
 }
 
 interface IOrderTable {
-    _id?: string,
+    _id?: string;
     consignorId?: string;
     consigneeId?: string;
     consignor?: IAddressDetails;
@@ -107,16 +119,17 @@ interface Item {
 // Define the OrderReference type
 interface IOrderReference {
     parent_id?: string; // Reference to the Order ID
-    items?: Item[];     // Array of items in the order
+    items?: Item[]; // Array of items in the order
     total_weight?: number | string | null;
+    _id?: string;
 }
 
 // Define the Batch type
 interface IBatch {
-    _id?: string;                  // Unique ID of the batch
-    ordersIDs?: OrderReference[];  // Array of orders with items
-    createdBy?: string;            // User ID who created the batch
-    updatedBy?: string;           // User ID who last updated the batch
-    createdAt?: string;            // Creation timestamp
-    updatedAt?: string;            // Last update timestamp
+    _id?: string; // Unique ID of the batch
+    ordersIDs?: OrderReference[]; // Array of orders with items
+    createdBy?: string; // User ID who created the batch
+    updatedBy?: string; // User ID who last updated the batch
+    createdAt?: string; // Creation timestamp
+    updatedAt?: string; // Last update timestamp
 }

@@ -22,14 +22,25 @@ type Item = {
     };
     itemId: string;
     price?: string
+    status:
+    | "Picked"
+    | "Reached_Source_Branch"
+    | "Reached_Source_Hub"
+    | "In Transit"
+    | "Reached_Destination_Hub"
+    | "Reached_Destination_Branch"
+    | "Pending"
+    | "Out_For_Delivery"
+    | "Delivered"
+    | "Cancelled";
 };
 
 interface Props {
-    id: string | undefined
+    id?: string;  // Optional property
+    onChange: (value: boolean) => void;  // Correct function signature
 }
 
-
-const OrderForm = ({ id }: Props) => {
+const OrderForm = ({ id, onChange }: Props) => {
     const { user } = useAuth()
     const [orderDetails, setOrderDetails] = useState<IOrder>({
         destinationHubId: "",
@@ -75,6 +86,7 @@ const OrderForm = ({ id }: Props) => {
         pincode: "",
         number: "",
     });
+    const [loading, setLoading] = useState(false)
     const [items, setItems] = useState<Item[]>([]);
     const [customers, setCustomers] = useState<ICustomer[]>([]);
     const [hubs, setHubs] = useState<IHub[]>([]);
@@ -106,6 +118,7 @@ const OrderForm = ({ id }: Props) => {
             weightKg: "",
             dimension: { ...dimension },
             itemId: "", // Temporary placeholder for itemId
+            status: 'Picked'
         }));
 
         // Combine existing items and new items, then regenerate itemIds for all
@@ -248,23 +261,33 @@ const OrderForm = ({ id }: Props) => {
 
         if (id) {
             try {
+                setLoading(true)
                 const resp = await updateOrder(id, obj);
                 if (resp) {
                     toast.success(resp?.message)
+                    onChange(false)
                 }
 
             } catch (error) {
                 console.log(error);
             }
+            finally {
+                setLoading(false)
+            }
         } else {
             try {
+                setLoading(true)
                 const resp = await createOrder(obj);
                 if (resp) {
                     toast.success(resp?.message)
+                    onChange(false)
                 }
 
             } catch (error) {
                 console.log(error);
+            }
+            finally {
+                setLoading(false)
             }
         }
 
@@ -800,7 +823,7 @@ const OrderForm = ({ id }: Props) => {
             {/* Submit Button */}
             <button
                 disabled={
-                    !orderDetails?.docketNumber || orderDetails?.items?.length < 0
+                    !orderDetails?.docketNumber || orderDetails?.items?.length < 0 || loading
                 }
                 type="submit"
                 className="p-3 bg-green-500 text-white rounded w-full"

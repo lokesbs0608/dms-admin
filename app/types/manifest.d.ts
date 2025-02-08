@@ -2,10 +2,10 @@
 
 interface Batch {
     _id: string;
-    items_count: string
+    items_count: number
     docketNumber?: string
-    total_weight?: number | string
-    // Add the other fields from your Batch model if needed
+    total_weight?: number
+    items: ItemDetails[]    // Add the other fields from your Batch model if needed
 }
 
 interface IManifest {
@@ -18,8 +18,6 @@ interface IManifest {
     estimatedDeliveryDate: string;  // You can change this to Date if using Date objects
     driverContactNumber: string;
     orderIDs: Batch[];
-    batchIDs: Batch[];
-    no_ofBatch: string;
     no_ofIndividualOrder: string;
     totalPcs: string;
     totalWeight: string;

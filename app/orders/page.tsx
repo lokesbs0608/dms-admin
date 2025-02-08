@@ -12,7 +12,7 @@ const Orders = () => {
   const [showItems, setShowItems] = useState('')
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchEmployees = async () => {
+  const fetchOrders = async () => {
     try {
       const response = await getOrders(); // API endpoint to fetch hubs;
       setHubs(response);
@@ -24,7 +24,7 @@ const Orders = () => {
 
   // Fetch hubs from API
   useEffect(() => {
-    fetchEmployees();
+    fetchOrders();
   }, []);
 
   // Filter hubs based on search query
@@ -140,7 +140,7 @@ const Orders = () => {
                       <table className="w-full border border-gray-300 mt-2">
                         <thead>
                           <tr className="bg-gray-100 dark:bg-gray-700">
-                            
+
                             <th className="px-4 py-2 border">Item ID</th>
                             <th className="px-4 py-2 border">Height</th>
                             <th className="px-4 py-2 border">Length</th>
@@ -151,7 +151,7 @@ const Orders = () => {
                         <tbody>
                           {order?.items.map((item) => (
                             <tr key={item.itemId} className="border-b">
-                              
+
                               <td className="px-4 py-2 border">{item.itemId}</td>
                               <td className="px-4 py-2 border">{item.dimension?.height || "N/A"}</td>
                               <td className="px-4 py-2 border">{item.dimension?.length || "N/A"}</td>
@@ -173,7 +173,7 @@ const Orders = () => {
 
 
 
-      <OrderDetailModal isOpen={showOrderModal} onClose={() => setShowOrderModal(false)} id={selectedOrder?._id} />
+      <OrderDetailModal isOpen={showOrderModal} onClose={() => { setShowOrderModal(false); setSelectedOrder(null); fetchOrders() }} id={selectedOrder?._id} />
 
 
 

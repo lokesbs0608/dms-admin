@@ -32,7 +32,7 @@ const OrderDetailModal = ({ isOpen, onClose, id }: Props) => {
                     </div>
 
                     {/* OrderForm Component */}
-                    <OrderForm id={id} />
+                    <OrderForm onChange={() => onClose()} id={id} />
                 </div>
             </div>
         </div>

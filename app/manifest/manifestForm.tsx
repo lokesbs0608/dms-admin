@@ -1,14 +1,14 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from "react";
 import { getHubs } from "../utils/hub";
-import { getOrderById, getOrders } from "../utils/orders";
+import { getOrders } from "../utils/orders";
 import { getLoader } from "../utils/loader";
 import { useAuth } from "../hooks/useAuth";
 import {
-    createBatch,
-    deleteBatch,
-    deleteBatchItems,
-    getBatchOrder,
+    createManifest,
+    deleteOrderIds,
+    getManifestById,
+    updateManifest,
 } from "../utils/manifest";
 import toast from "react-hot-toast";
 
@@ -16,13 +16,6 @@ interface Props {
     isOpen: boolean;
     onClose: () => void;
     id: string | undefined;
-}
-interface Batch {
-    _id: string;
-    items_count: string;
-    docketNumber?: string;
-    total_weight?: number | string
-    // Add the other fields from your Batch model if needed
 }
 
 const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
@@ -36,13 +29,11 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
     const [manifestData, setManifestData] = useState<IManifest>({
         actualWeight: "",
-        batchIDs: [],
         destinationHubID: "",
         driverContactNumber: "",
         estimatedDeliveryDate: "",
         gpsLocation: "",
         loaderId: "",
-        no_ofBatch: "",
         no_ofIndividualOrder: "",
         orderIDs: [],
         sourceHubID: "",
@@ -52,7 +43,6 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
         transport_type: "",
         vehicleNumber: "",
     });
-    const [batchOrder, setBatchOrder] = useState<IBatch[]>([]);
 
     const [showItems, setShowItems] = useState("");
 
@@ -83,10 +73,18 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             try {
                 await fetchLoader();
                 await fetchHubs();
-                await fetchBatchOrder();
 
                 if (id) {
-                    const resp = await getOrderById(id);
+                    const resp = await getManifestById(id);
+                    if (resp?._id) {
+                        setManifestData({
+                            ...manifestData,
+                            ...resp,
+                            loaderId: resp?.loaderId?._id,
+                            sourceHubID: resp?.sourceHubID?._id,
+                            destinationHubID: resp?.destinationHubID?._id,
+                        });
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -113,97 +111,6 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             console.error("Error fetching hubs:", error);
         }
     };
-    const fetchBatchOrder = async () => {
-        try {
-            const resp = await getBatchOrder(`status=Picked`);
-            if (resp?.message === "No batches found") {
-                setBatchOrder([]);
-                setManifestData({ ...manifestData, batchIDs: [] });
-                return;
-            } else {
-                // Define the temporary array to hold batch orders
-                const temp: IOrderReference[] = [];
-                const batchIDs: Batch[] = [];
-
-                // Array of static colors for batch orders with lighter shades
-                const colors = [
-                    "#FFB3B3",
-                    "#A5D6A7",
-                    "#81D4FA",
-                    "#FFF176",
-                    "#D1C4E9",
-                    "#FFCC80",
-                    "#80DEEA",
-                    "#C8E6C9",
-                ];
-
-                // Loop through the ordersIDs of the response and format data
-                resp.forEach(
-                    (
-                        batch: {
-                            ordersIDs: { parent_id: { _id: string }; items: [] }[];
-                            _id: string;
-                        },
-                        index: number
-                    ) => {
-                        const color = colors[index % colors.length]; // Cycle through colors based on index
-
-                        batch?.ordersIDs?.forEach(
-                            (order: { parent_id: { _id: string }; items: [] }) => {
-
-                                const parentId = order?.parent_id?._id;
-                                const Items = order?.items;
-                                const filterOrderByParentId = orders?.filter((items) => items?._id === parentId);
-
-                                let totalWeight = 0; // Initialize weight counter
-
-                                filterOrderByParentId?.forEach((ele) => {
-                                    ele?.items?.forEach((exitingItem) => {
-                                        Items?.forEach((batchItem) => {
-                                            if (exitingItem?.itemId === batchItem?.itemId || '') {
-                                                totalWeight += Number(exitingItem?.weight) || 0; // Ensure weight is a number
-                                            }
-                                        });
-                                    });
-                                });
-                                const ordersIDs = {
-                                    parent_id: order.parent_id?._id, // Assuming parent_id is part of the order
-                                    items: order.items, // Assuming items is an array in the order
-                                    _id: batch._id, // Adding batch _id to the orders
-                                    color: color, // Adding color to each batch order
-                                    total_weight: totalWeight
-                                };
-                                temp.push(ordersIDs); // Push the formatted order to the temporary array
-                                console.log(order,)
-                                batchIDs.push({
-                                    _id: batch?._id,
-                                    items_count: order?.items?.length.toString(),
-                                    total_weight: totalWeight.toString()
-                                });
-                            }
-                        );
-                    }
-                );
-                setManifestData({ ...manifestData, batchIDs: batchIDs });
-
-                // Now transform the temp array into the correct format for batch order
-                const primary: IBatch[] = [];
-                temp.forEach((items) => {
-                    const ordersIDs = {
-                        ordersIDs: [items], // Wrap the items inside an ordersIDs array
-                    };
-                    primary.push(ordersIDs);
-                });
-
-                // Set the state with the transformed batch order data
-                setBatchOrder(primary);
-
-
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    };
 
     // Filter hubs based on search query
     useEffect(() => {
@@ -213,220 +120,30 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
         setFilteredOrders(filtered);
     }, [orders, searchQuery]);
 
-    const createBatchOrder = (parentID: string, item: Item) => {
-        const orderIDItems = manifestData?.orderIDs?.filter((order) => order?._id); // Get all matching orders
-        const filterOrderItems = filteredOrder?.filter((order) => orderIDItems.some(o => o._id === order._id));
-
-        // Find the order in orderIDItems that matches the parentID
-        const matchingOrder = orderIDItems.find(o => o._id?.toString() === parentID);
-        const matchingFilterOrder = filterOrderItems?.find(order => order._id === parentID);
-
-        // Get the total count of items for this specific parentID from orderIDItems
-        const orderItemsCount = matchingOrder ? +matchingOrder.items_count || 0 : 0;
-
-
-
-        // Get total count of items for this specific parentID from batchOrder
-        const batchItemsCount = batchOrder?.reduce((total, batch) => {
-            return total + (batch.ordersIDs?.reduce((sum, order) =>
-                order.parent_id === parentID ? sum + (order.items?.length || 0) : sum
-                , 0) || 0);
-        }, 0) || 0;
-
-        // Get total count of items for this specific parentID from filteredOrder
-        const filterOrderItemsCount = matchingFilterOrder ? matchingFilterOrder.items.length || 0 : 0;
-
-        console.log(`ParentID: ${parentID} | Total: ${orderItemsCount + batchItemsCount} | Allowed: ${filterOrderItemsCount}`);
-
-        // ✅ FIX: Allow batch if manifest data count is 0 (items_count === 0)
-        if (orderItemsCount > 0 && (orderItemsCount + batchItemsCount) >= filterOrderItemsCount) {
-            return toast.error(`Batch Cannot be created for Parent ID: ${parentID} due to docket number already in manifest Table`);
-        }
-
-
-
-        setBatchOrder((prevBatchOrder: IBatch[]) => {
-            // Check if there is an order with the given parentID in the batch
-            const existingOrder = prevBatchOrder.find((batch) =>
-                batch.ordersIDs?.some((order) => order.parent_id === parentID)
-            );
-
-            if (existingOrder) {
-                return prevBatchOrder
-                    .map((batch) => {
-                        if (batch.ordersIDs) {
-                            // Find the specific order within ordersIDs
-                            const updatedOrders = batch.ordersIDs
-                                .map((order) => {
-                                    if (order.parent_id === parentID) {
-                                        const itemExists = order.items?.some(
-                                            (existingItem: { itemId: string | undefined }) =>
-                                                existingItem.itemId === item.itemId
-                                        );
-
-                                        if (itemExists) {
-                                            // If the item exists, remove it (same parentId and itemId)
-                                            const updatedItems = order.items?.filter(
-                                                (existingItem: { itemId: string | undefined }) =>
-                                                    existingItem.itemId !== item.itemId
-                                            );
-                                            return updatedItems?.length
-                                                ? { ...order, items: updatedItems }
-                                                : undefined; // Remove order if items are empty
-                                        } else {
-                                            // If the item does not exist, add it
-                                            return {
-                                                ...order,
-                                                items: [...(order.items || []), item],
-                                            };
-                                        }
-                                    }
-                                    return order;
-                                })
-                                .filter((order) => order !== undefined) as IOrderReference[]; // Remove undefined orders
-
-                            return { ...batch, ordersIDs: updatedOrders };
-                        }
-                        return batch;
-                    })
-                    .filter((batch) => batch.ordersIDs?.length); // Remove batches with no orders
-            } else {
-                // If the parentID does not exist, create a new OrderReference
-                const newOrder: IOrderReference = {
-                    parent_id: parentID,
-                    items: [item],
-                    // total_weight: item?.reduce((sum, item) => sum + (Number(item?.weight) || 0), 0)
-                };
-                const newBatch: IBatch = { ordersIDs: [newOrder] };
-                return [...prevBatchOrder, newBatch];
-            }
-        });
-    };
-    const isItemChecked = (parentID: string, itemId: string) => {
-        // Find the batch that contains the specific order with the parentID and itemId
-        const existingOrder = batchOrder.find((batch) =>
-            batch.ordersIDs?.some(
-                (order) =>
-                    order.parent_id === parentID &&
-                    order.items?.some(
-                        (item: { itemId: string }) => item.itemId === itemId
-                    )
-            )
-        );
-
-        // If an order is found, retrieve the color from the corresponding batch and return both found status and color
-        if (existingOrder) {
-            const orderWithColor = existingOrder?.ordersIDs?.find(
-                (order) =>
-                    order.parent_id === parentID &&
-                    order.items?.some(
-                        (item: { itemId: string }) => item.itemId === itemId
-                    )
-            );
-
-            // Return true and the color associated with the batch
-            const color = orderWithColor?.color || "#FFFFFF"; // Default color if not found
-            return { found: true, color, batchId: orderWithColor?._id || null };
-        }
-
-        // Return false and no color if not found
-        return { found: false, color: "#FFFFFF" };
-    };
-
-    const handleBatchCreate = async () => {
-        try {
-            await createBatch(batchOrder);
-            fetchBatchOrder();
-        } catch (error) {
-            console.log(error);
-        }
-    };
-    const handleRemoveItems = async (batchId: string, itemID: string) => {
-        try {
-            const encodedItemId = encodeURIComponent(itemID);
-            await deleteBatchItems(batchId, encodedItemId);
-            fetchBatchOrder();
-        } catch (error) {
-            console.log(error);
-        }
-    };
-    const handleRemoveBatches = async (batchId: string,) => {
-        try {
-            await deleteBatch(batchId);
-            fetchBatchOrder();
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleOrderIdsToManifest = async (orders: any[]) => {
-
         try {
-
             const formattedOrderIDs = orders.map(
-                (order: { _id: string; docketNumber: string; items: ItemDetails[] }) => ({
+                (order: {
+                    _id: string;
+                    docketNumber: string;
+                    items: ItemDetails[];
+                }) => ({
                     _id: order._id,
-                    items: order?.items || [],
+                    items_count: order?.items?.length, // Convert to string
                     docketNumber: order?.docketNumber,
-                    total_weight: order?.items?.reduce((sum, item) => sum + (Number(item?.weight) || 0), 0)
+                    total_weight: order?.items?.reduce(
+                        (sum, item) => sum + (Number(item?.weight) || 0),
+                        0
+                    ),
+                    items: order?.items,
                 })
             );
-
-            // Initialize a Map with existing manifest data
-            const updatedOrderIDsMap = new Map<string, Batch>(
-                (manifestData?.orderIDs || []).map((order: Batch) => [order._id, order])
-            );
-
-            // Process each order and update the map
-            formattedOrderIDs.forEach((order) => {
-                const { _id, items: newItems, docketNumber, total_weight } = order;
-
-                // Check if an existing batch matches the `_id`
-                const batchOrdersIDs = batchOrder?.[0]?.ordersIDs || [];
-                const existingBatch = batchOrdersIDs.find(
-                    (batch: IOrderReference) => batch?.parent_id === _id
-                );
-
-                if (existingBatch) {
-                    const existingItems = new Set(
-                        existingBatch.items.map((item: Item) => item.itemId)
-                    );
-
-                    // Filter out duplicate items
-                    const uniqueItems = newItems.filter(
-                        (item: Item) => !existingItems.has(item.itemId)
-                    );
-
-                    // Remove the existing `_id` and replace it with the new data
-                    updatedOrderIDsMap.delete(_id);
-                    if (uniqueItems.length > 0) {
-                        updatedOrderIDsMap.set(_id, {
-                            _id,
-                            items_count: uniqueItems.length.toString(),
-                            docketNumber,
-                            total_weight: uniqueItems?.reduce((sum, item) => sum + (Number(item?.weight) || 0), 0)
-                        });
-                    }
-                } else {
-                    // If no matching parent_id exists, ensure no duplicate `_id`
-                    updatedOrderIDsMap.delete(_id);
-                    updatedOrderIDsMap.set(_id, {
-                        _id,
-                        items_count: newItems.length.toString(),
-                        docketNumber,
-                        total_weight
-                    });
-                }
-            });
-
-            // Convert Map back to an array for manifestData
-            const updatedOrderIDs = Array.from(updatedOrderIDsMap.values());
 
             // Update manifest data with the new orderIDs
             const updatedManifestData = {
                 ...manifestData,
-                orderIDs: updatedOrderIDs,
+                orderIDs: formattedOrderIDs,
             };
 
             setManifestData(updatedManifestData);
@@ -436,7 +153,27 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
         }
     };
 
-    const deleteOrderIds = (idsToDelete: string[]) => {
+    const deleteOrder = async (idsToDelete: string) => {
+        try {
+            const filterString = `status=Pending&status=Picked&sourceHubId=${manifestData.sourceHubID || ""}`;
+            const resp = await deleteOrderIds(id || "", idsToDelete);
+            console.log(resp, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+            if (resp?.message === 'Order removed from manifest and status updated successfully.') {
+                toast.success('Order removed from manifest and status updated successfully')
+                setManifestData({
+                    ...manifestData,
+                    orderIDs: resp?.updatedManifest?.orderIds
+
+                })
+                console.log(resp?.updatedManifest?.orderIds)
+                fetchOrder(filterString);
+            }
+        } catch (error) {
+            console.error("Error deleting order IDs:", error);
+            throw new Error("Failed to delete order IDs");
+        }
+    };
+    const deleteOrderIdsFromTable = (idsToDelete: string[]) => {
         try {
             console.log("IDs to delete:", idsToDelete);
 
@@ -463,51 +200,11 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
             throw new Error("Failed to delete order IDs");
         }
     };
-    const deleteBatchIds = async (batchIdsToDelete: string[]) => {
-        await handleRemoveBatches(batchIdsToDelete[0])
-        try {
-            console.log("Batch IDs to delete:", batchIdsToDelete);
-
-            if (!manifestData?.batchIDs || !Array.isArray(manifestData.batchIDs)) {
-                throw new Error("Manifest data or batch IDs are invalid");
-            }
-
-            // Filter out batches with matching _id
-            const updatedBatchIDs = manifestData.batchIDs.filter(
-                (batch: { _id: string }) => !batchIdsToDelete.includes(batch._id)
-            );
-
-            // Update the manifest data with the filtered batch IDs
-            const updatedManifestData = {
-                ...manifestData,
-                batchIDs: updatedBatchIDs,
-            };
-
-            // Update the state
-            setManifestData(updatedManifestData);
-            console.log(
-                "Updated Manifest Data after batch deletion:",
-                updatedManifestData
-            );
-        } catch (error) {
-            console.error("Error deleting batch IDs:", error);
-            throw new Error("Failed to delete batch IDs");
-        }
-    };
-
-    const checkDuplicateOrderId = (orderId: string): boolean => {
-        // Check if the orderID exists in the manifestData orderIDs array
-        const isDuplicate = manifestData?.orderIDs?.some(
-            (order: { _id: string }) => order._id === orderId
-        );
-
-        return isDuplicate; // Returns true if duplicate found, false otherwise
-    };
 
     // Function to check if all filtered orders exist in the orderIDs
     const checkAllOrdersExist = () => {
-        return filteredOrder.every((order) =>
-            manifestData.orderIDs.some(
+        return filteredOrder?.every((order) =>
+            manifestData?.orderIDs?.some(
                 (existingOrder) => existingOrder._id === order._id
             )
         );
@@ -541,78 +238,58 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                 0
             ) || 0;
 
-        // Get total count from batchOrder
-        const batchItemsCount =
-            batchOrder?.reduce((total, batch) => {
-                return (
-                    total +
-                    (batch.ordersIDs?.reduce((sum, order) => sum + (order.items?.length || 0), 0) || 0)
-                );
-            }, 0) || 0;
-
-        // ✅ Correcting batchWeight Calculation
-        const batchWeight =
-            batchOrder?.reduce((total, batch) => {
-                return (
-                    total +
-                    (batch.ordersIDs?.reduce((sum, order) => sum + (Number(order.total_weight) || 0), 0) || 0)
-                );
-            }, 0) || 0;
-
         // Get total weight from orderIDs
         const orderItemsWeight =
             manifestData?.orderIDs?.reduce(
                 (total, order) => total + (Number(order.total_weight) || 0),
                 0
             ) || 0;
-
-        // Call this function to find unique parent IDs
-        const uniqueIds = await findMergedParentIDs();
-        console.log("Received Unique IDs:", uniqueIds);
-
-        // ✅ Get total item count for ALL orders (not just filtered by ID)
-        const orderListItemsCount =
-            filteredOrder?.reduce((total, order) => total + (order.items?.length || 0), 0) || 0;
-
-        console.log(`OrderIDs Items Count: ${orderItemsCount}`);
-        console.log(`BatchOrder Items Count: ${batchItemsCount}`);
-        console.log(`FilteredOrder Items Count: ${orderListItemsCount}`); // Should now be 15 instead of 11
-        console.log(`Batch Weight: ${batchWeight}`);
-        console.log(`OrderIDs Weight: ${orderItemsWeight}`);
-
         setManifestData({
             ...manifestData,
-            no_ofBatch: batchItemsCount.toString(),
+
             no_ofIndividualOrder: orderItemsCount.toString(),
-            actualWeight: (batchWeight + orderItemsWeight).toFixed(3).toString(), // ✅ Ensure it's a string for state
+            actualWeight: orderItemsWeight.toFixed(3).toString(),
+            totalPcs: orderItemsCount.toFixed(1).toString(),
         });
     };
 
-
-    const findMergedParentIDs = async () => {
-        // Extract parent IDs from orderIDs (manifestData)
-        const orderParentIDs = manifestData?.orderIDs?.map(order => order._id) || [];
-
-        // Extract parent IDs from batchOrder
-        const batchParentIDs = manifestData?.batchIDs?.map(order => order._id) || [];
-
-        // Use a Set to ensure unique IDs while merging
-        const uniqueIDs = new Set([...orderParentIDs, ...batchParentIDs]);
-
-        console.log("Merged Unique Parent IDs (Duplicates removed):", [...uniqueIDs]);
-        return [...uniqueIDs];
-    };
-
-
     useEffect(() => {
         validateAllCounts();
-        console.log(batchOrder)
-    }, [manifestData?.batchIDs, manifestData?.orderIDs])
+    }, [manifestData?.orderIDs]);
 
+    const handleManifestOrder = async (e: { preventDefault: () => void }) => {
+        e.preventDefault();
+        if (!manifestData?.orderIDs) return toast.error('No order Selected');
+        if (manifestData?.totalWeight >= manifestData?.actualWeight) return toast.error('Please check Loader weight')
 
-
-
-
+        if (id) {
+            try {
+                const resp = await updateManifest(id, manifestData);
+                if (
+                    resp?.message === "Manifest updated successfully"
+                ) {
+                    toast.success("Manifest updated successfully");
+                    onClose();
+                }
+            } catch (error) {
+                console.log(error);
+            } finally {
+            }
+        } else {
+            try {
+                const resp = await createManifest(manifestData);
+                if (
+                    resp?.message === "Manifest created successfully and orders updated."
+                ) {
+                    toast.success("Manifest created successfully and orders updated.");
+                    onClose();
+                }
+            } catch (error) {
+                console.log(error);
+            } finally {
+            }
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -633,8 +310,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                             Close
                         </button>
                     </div>
-
-                    <div>
+                    <form onSubmit={handleManifestOrder}>
                         <div className="grid grid-cols-5 gap-6">
                             <div>
                                 <h2 className="font-bold mb-2">Loader</h2>
@@ -661,11 +337,10 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                 <h2 className="font-bold mb-2">Driver Number</h2>
                                 <input
                                     type="text" // Use "text" to avoid built-in browser formatting for "number"
-                                    placeholder="Vehicle Number"
+                                    placeholder="Driver Contact Number"
                                     className="w-full p-2 border mb-2 rounded"
                                     value={manifestData?.driverContactNumber}
                                     name="driverContactNumber"
-                                    required
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         const regex = /^[6-9][0-9]{0,9}$/; // Allows 10 digits starting with 6-9
@@ -688,7 +363,6 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                     className="w-full p-2 border mb-2 rounded"
                                     value={manifestData?.gpsLocation}
                                     name="docketNumber"
-                                    required
                                     onChange={(e) => {
                                         setManifestData({
                                             ...manifestData,
@@ -705,7 +379,6 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                     className="w-full p-2 border mb-2 rounded"
                                     value={manifestData?.vehicleNumber || ""}
                                     name="vehicleNumber"
-                                    required
                                     onChange={(e) => {
                                         const value = e.target.value.toUpperCase(); // Convert to uppercase
                                         const regex = /^[A-Z0-9]*$/; // Allow only letters and numbers during typing
@@ -789,6 +462,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                             estimatedDeliveryDate: e.target.value,
                                         })
                                     }
+                                    value={manifestData?.estimatedDeliveryDate.split("T")[0]}
                                     className="w-full p-2 border rounded mb-4"
                                     placeholder="Estimated Delivery Date"
                                     type="date"
@@ -819,14 +493,24 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                             totalWeight: e.target.value,
                                         })
                                     }
+                                    value={manifestData?.totalWeight}
                                     className="w-full p-2 border rounded mb-4"
                                     placeholder="Loader weight"
                                     type="number"
                                 />
                             </div>
                             <div>
-                                No of Batch : {batchOrder?.length} <br />   No of Batch : {batchOrder?.length} <br />   Batch Order Pcs : {manifestData?.no_ofBatch} <br />  Individual Order Pcs :   {manifestData?.no_ofIndividualOrder} <br /> Total Pcs :  {+manifestData?.no_ofBatch + +manifestData?.no_ofIndividualOrder}
+                                Individual Order Pcs : {manifestData?.no_ofIndividualOrder}{" "}
+                                <br /> Total Pcs : {+manifestData?.no_ofIndividualOrder}
                             </div>
+                        </div>
+                        <div className="flex items-end justify-end">
+                            <button
+                                type="submit"
+                                className="bg-green-500 mt-3 flex items-center justify-center w-90 m-4 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded"
+                            >
+                                {id ? "Update Manifest" : "Create Manifest"}
+                            </button>
                         </div>
                         <div>
                             <input
@@ -836,215 +520,143 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="border rounded-lg px-4 py-2 w-full max-w-sm text-gray-700 focus:ring-blue-500 focus:border-blue-500"
                             />
-                            <div>
-                                {batchOrder?.length >= 1 && (
-                                    <button
-                                        onClick={() => handleBatchCreate()}
-                                        className="bg-green-500 mt-3 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded"
-                                    >
-                                        Create Batch
-                                    </button>
-                                )}
-                            </div>
 
                             <div className="flex gap-6 items-start">
                                 <div className="relative overflow-x-auto shadow-md sm:rounded-lg mt-4">
-                                    <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                                        <caption className="p-5 text-[#1d4ed8] text-lg font-semibold text-left rtl:text-right bg-white dark:text-white dark:bg-gray-800">
-                                            Pending Orders
-                                        </caption>
+                                    {filteredOrder.length < 1 ? (
+                                        <div className="w-full  d-none">  No Pending Orders</div>
+                                    ) : (
+                                        <div>
+                                            <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                                                <caption className="p-5 text-[#1d4ed8] text-lg font-semibold text-left rtl:text-right bg-white dark:text-white dark:bg-gray-800">
+                                                    Pending Orders
+                                                </caption>
 
-                                        <thead className="text-xs text-[#1d4ed8] uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                                            <tr>
-                                                <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
-                                                    <label>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isChecked}
-                                                            onChange={handleCheckboxChange}
-                                                        />
-                                                    </label>
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
-                                                    Docket Number
-                                                </th>
-
-                                                <th scope="col" className="px-6 py-3">
-                                                    Source Hub Id
-                                                </th>
-
-                                                <th scope="col" className="px-6 py-3">
-                                                    Destination Hub Id
-                                                </th>
-                                                <th scope="col" className="px-6 py-3">
-                                                    Transport Type
-                                                </th>
-                                                <th scope="col" className="px-6 py-3">
-                                                    Status
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredOrder?.map((order, index) => (
-                                                <>
-                                                    <tr
-                                                        key={`${order._id}_${index}_order`}
-                                                        className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
-                                                    >
-                                                        <th
-                                                            scope="col"
-                                                            className="px-6 py-3 text-[#1d4ed8]"
-                                                        >
+                                                <thead className="text-xs text-[#1d4ed8] uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                                    <tr>
+                                                        <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
                                                             <label>
                                                                 <input
                                                                     type="checkbox"
-                                                                    onChange={(e) =>
-                                                                        e.target?.checked
-                                                                            ? handleOrderIdsToManifest([order])
-                                                                            : deleteOrderIds([order?._id || ""])
-                                                                    }
-                                                                    className="cursor-pointer"
-                                                                    checked={
-                                                                        checkDuplicateOrderId(order?._id || "") ||
-                                                                        false
-                                                                    }
+                                                                    checked={isChecked}
+                                                                    onChange={handleCheckboxChange}
                                                                 />
                                                             </label>
                                                         </th>
-                                                        <th
-                                                            onClick={() =>
-                                                                setShowItems(
-                                                                    showItems === order?._id
-                                                                        ? ""
-                                                                        : order?._id || ""
-                                                                )
-                                                            }
-                                                            scope="row"
-                                                            className="px-6 cursor-pointer py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                                                        >
-                                                            {order.docketNumber}
+                                                        <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
+                                                            Docket Number
                                                         </th>
 
-                                                        <td className="px-6 py-4">
-                                                            {order.sourceHubId?.hub_code}
-                                                        </td>
-                                                        {/* <td className="px-6 py-4">{order.consignor?.city}</td> */}
-                                                        <td className="px-6 py-4">
-                                                            {order.destinationHubId?.hub_code}
-                                                        </td>
-                                                        {/* <td className="px-6 py-4">{order.consignee?.city}</td> */}
-                                                        <td className="px-6 py-4">
-                                                            {order.transport_type}
-                                                        </td>
-                                                        <td className="px-6 py-4">{order.status}</td>
-                                                    </tr>
+                                                        <th scope="col" className="px-6 py-3">
+                                                            Source Hub Id
+                                                        </th>
 
-                                                    <tr>
-                                                        {showItems === order?._id && (
-                                                            <td colSpan={6} className="px-6 py-3">
-                                                                <table className="w-full border border-gray-300 mt-2">
-                                                                    <thead>
-                                                                        <tr className="bg-gray-100 dark:bg-gray-700">
-                                                                            {" "}
-                                                                            <th className="px-4 py-2 border">
-                                                                                Action
-                                                                            </th>
-                                                                            <th className="px-4 py-2 border">
-                                                                                Item ID
-                                                                            </th>
-                                                                            <th className="px-4 py-2 border">
-                                                                                Height
-                                                                            </th>
-                                                                            <th className="px-4 py-2 border">
-                                                                                Length
-                                                                            </th>
-                                                                            <th className="px-4 py-2 border">
-                                                                                Width
-                                                                            </th>
-                                                                            <th className="px-4 py-2 border">
-                                                                                Weight
-                                                                            </th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        {order?.items.map((item) => (
-                                                                            <tr
-                                                                                key={`${item.itemId}_items`}
-                                                                                className="border "
-                                                                                style={{
-                                                                                    background: `${isItemChecked(
-                                                                                        order?._id || "",
-                                                                                        item?.itemId
-                                                                                    )?.color || "#FFFFFF"
-                                                                                        }`, // Default to white if no color is found
-                                                                                }}
-                                                                            >
-                                                                                <th scope="col" className="px-6 py-3 ">
-                                                                                    {!isItemChecked(
-                                                                                        order?._id || "",
-                                                                                        item?.itemId
-                                                                                    )?.batchId ? (
-                                                                                        <label>
-                                                                                            <input
-                                                                                                key={item?.itemId}
-                                                                                                checked={
-                                                                                                    isItemChecked(
-                                                                                                        order?._id || "",
-                                                                                                        item?.itemId
-                                                                                                    )?.found
-                                                                                                }
-                                                                                                onChange={() =>
-                                                                                                    createBatchOrder(
-                                                                                                        order?._id || "",
-                                                                                                        item
-                                                                                                    )
-                                                                                                }
-                                                                                                type="checkbox"
-                                                                                            />
-                                                                                        </label>
-                                                                                    ) : (
-                                                                                        <div
-                                                                                            onClick={() =>
-                                                                                                handleRemoveItems(
-                                                                                                    isItemChecked(
-                                                                                                        order?._id || "",
-                                                                                                        item?.itemId
-                                                                                                    )?.batchId || "",
-                                                                                                    item?.itemId
-                                                                                                )
-                                                                                            }
-                                                                                            className="text-red-500 cursor-pointer"
-                                                                                        >
-                                                                                            Remove
-                                                                                        </div>
-                                                                                    )}
-                                                                                </th>
-                                                                                <td className="px-4 py-2 border">
-                                                                                    {item.itemId}
-                                                                                </td>
-                                                                                <td className="px-4 py-2 border">
-                                                                                    {item.dimension?.height || "N/A"}
-                                                                                </td>
-                                                                                <td className="px-4 py-2 border">
-                                                                                    {item.dimension?.length || "N/A"}
-                                                                                </td>
-                                                                                <td className="px-4 py-2 border">
-                                                                                    {item.dimension?.width || "N/A"}
-                                                                                </td>
-                                                                                <td className="px-4 py-2 border">
-                                                                                    {item.weight || "N/A"}
-                                                                                </td>
-                                                                            </tr>
-                                                                        ))}
-                                                                    </tbody>
-                                                                </table>
-                                                            </td>
-                                                        )}
+                                                        <th scope="col" className="px-6 py-3">
+                                                            Destination Hub Id
+                                                        </th>
+                                                        <th scope="col" className="px-6 py-3">
+                                                            Transport Type
+                                                        </th>
+                                                        <th scope="col" className="px-6 py-3">
+                                                            Status
+                                                        </th>
                                                     </tr>
-                                                </>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                                </thead>
+                                                <tbody>
+                                                    {filteredOrder?.map((order, index) => (
+                                                        <>
+                                                            <tr
+                                                                key={`${order._id}_${index}_order`}
+                                                                className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
+                                                            >
+                                                                <th
+                                                                    onClick={() =>
+                                                                        setShowItems(
+                                                                            showItems === order?._id
+                                                                                ? ""
+                                                                                : order?._id || ""
+                                                                        )
+                                                                    }
+                                                                    scope="row"
+                                                                    className="px-6 cursor-pointer py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                                                                >
+                                                                    {order.docketNumber}
+                                                                </th>
+
+                                                                <td className="px-6 py-4">
+                                                                    {order.sourceHubId?.hub_code}
+                                                                </td>
+                                                                {/* <td className="px-6 py-4">{order.consignor?.city}</td> */}
+                                                                <td className="px-6 py-4">
+                                                                    {order.destinationHubId?.hub_code}
+                                                                </td>
+                                                                {/* <td className="px-6 py-4">{order.consignee?.city}</td> */}
+                                                                <td className="px-6 py-4">
+                                                                    {order.transport_type}
+                                                                </td>
+                                                                <td className="px-6 py-4">{order.status}</td>
+                                                            </tr>
+
+                                                            <tr>
+                                                                {showItems === order?._id && (
+                                                                    <td colSpan={6} className="px-6 py-3">
+                                                                        <table className="w-full border border-gray-300 mt-2">
+                                                                            <thead>
+                                                                                <tr className="bg-gray-100 dark:bg-gray-700">
+                                                                                    {" "}
+                                                                                    <th className="px-4 py-2 border">
+                                                                                        Item ID
+                                                                                    </th>
+                                                                                    <th className="px-4 py-2 border">
+                                                                                        Height
+                                                                                    </th>
+                                                                                    <th className="px-4 py-2 border">
+                                                                                        Length
+                                                                                    </th>
+                                                                                    <th className="px-4 py-2 border">
+                                                                                        Width
+                                                                                    </th>
+                                                                                    <th className="px-4 py-2 border">
+                                                                                        Weight
+                                                                                    </th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {order?.items.map((item) => (
+                                                                                    <tr
+                                                                                        key={`${item.itemId}_items`}
+                                                                                        className="border "
+                                                                                    >
+                                                                                        <td className="px-4 py-2 border">
+                                                                                            {item.itemId}
+                                                                                        </td>
+                                                                                        <td className="px-4 py-2 border">
+                                                                                            {item.dimension?.height || "N/A"}
+                                                                                        </td>
+                                                                                        <td className="px-4 py-2 border">
+                                                                                            {item.dimension?.length || "N/A"}
+                                                                                        </td>
+                                                                                        <td className="px-4 py-2 border">
+                                                                                            {item.dimension?.width || "N/A"}
+                                                                                        </td>
+                                                                                        <td className="px-4 py-2 border">
+                                                                                            {item.weight || "N/A"}
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </td>
+                                                                )}
+                                                            </tr>
+                                                        </>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>)}
+
+
+
                                 </div>
 
                                 <div className="relative overflow-x-auto shadow-md sm:rounded-lg mt-4">
@@ -1071,42 +683,6 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {manifestData?.batchIDs?.map((order) => (
-                                                <>
-                                                    <tr
-                                                        className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
-                                                        key={`${order}_manifest_order}`}
-                                                    >
-                                                        <th
-                                                            scope="row"
-                                                            className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                                                        >
-                                                            {order?._id}
-                                                        </th>
-                                                        <th
-                                                            scope="row"
-                                                            className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                                                        >
-                                                            {order?.items_count}
-                                                        </th>
-                                                        <th>
-                                                            {order?.total_weight}
-                                                        </th>
-
-                                                        <td className="px-6 py-4">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    deleteBatchIds([order?._id || ""])
-                                                                }
-                                                                className="ml-4 font-medium text-red-600 dark:text-red-500 hover:underline"
-                                                            >
-                                                                Remove
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                </>
-                                            ))}
                                             {manifestData?.orderIDs?.map((order) => (
                                                 <>
                                                     <tr
@@ -1125,15 +701,15 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                         >
                                                             {order?.items_count}
                                                         </th>
-                                                        <th>
-                                                            {order?.total_weight}
-                                                        </th>
+                                                        <th>{order?.total_weight}</th>
 
                                                         <td className="px-6 py-4">
                                                             <button
                                                                 type="button"
                                                                 onClick={() =>
-                                                                    deleteOrderIds([order?._id || ""])
+                                                                    order?.items[0].status === "Manifested"
+                                                                        ? deleteOrder(order?._id)
+                                                                        : deleteOrderIdsFromTable([order?._id])
                                                                 }
                                                                 className="ml-4 font-medium text-red-600 dark:text-red-500 hover:underline"
                                                             >
@@ -1148,7 +724,7 @@ const ManifestDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>

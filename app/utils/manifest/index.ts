@@ -16,12 +16,12 @@ type ErrorWithResponse = {
 
 
 // create hub
-const createOrder = async (data: Partial<IOrder>) => {
+const createManifest = async (data: Partial<IManifest>) => {
     try {
-        const response = await instance.post(`/orders`, data);
+        const response = await instance.post(`/manifest`, data);
         return response.data;
     } catch (error) {
-        console.error("Error creating order:", error);
+        console.error("Error creating manifest:", error);
         if ((error as ErrorWithResponse).response) {
             handleToast({
                 err: {
@@ -31,17 +31,32 @@ const createOrder = async (data: Partial<IOrder>) => {
         }
     }
 };
-
 
 // create hub
-const createBatch = async (data: Partial<IBatch[]>) => {
+const updateManifest = async (id: string, data: Partial<IManifest>) => {
     try {
-        const response = await instance.post(`/batch`, data);
-        handleToast({
-            res: { message: response?.data?.message }
-        });
-        return response?.data?.message
+        const response = await instance.put(`/manifest/${id}`, data);
+        return response.data;
     } catch (error) {
+        console.error("Error creating manifest:", error);
+        if ((error as ErrorWithResponse).response) {
+            handleToast({
+                err: {
+                    response: (error as ErrorWithResponse).response
+                }
+            });
+        }
+    }
+};
+
+
+// Get orders
+const getManifestById = async (id: string) => {
+    try {
+        const response = await instance.get(`/manifest?${id}`);
+        return response.data[0];
+    } catch (error) {
+        console.error("Error fetching manifest:", error);
         if ((error as ErrorWithResponse).response) {
             handleToast({
                 err: {
@@ -52,40 +67,9 @@ const createBatch = async (data: Partial<IBatch[]>) => {
     }
 };
 // Get orders
-const getBatchOrder = async (url: string = "") => {
+const deleteOrderIds = async (_id: string, id: string = "") => {
     try {
-        const response = await instance.get(`/batch?${url}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching orders:", error);
-        if ((error as ErrorWithResponse).response) {
-            handleToast({
-                err: {
-                    response: (error as ErrorWithResponse).response
-                }
-            });
-        }
-    }
-};
-// Get orders
-const deleteBatchItems = async (batchId: string, id: string = "") => {
-    try {
-        const response = await instance.delete(`/batch/${batchId}/items/${id}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching orders:", error);
-        if ((error as ErrorWithResponse).response) {
-            handleToast({
-                err: {
-                    response: (error as ErrorWithResponse).response
-                }
-            });
-        }
-    }
-};
-const deleteBatch = async (batchId: string,) => {
-    try {
-        const response = await instance.delete(`/batch/${batchId}`);
+        const response = await instance.put(`/manifest/${_id}/order/${id}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching orders:", error);
@@ -106,7 +90,7 @@ const deleteBatch = async (batchId: string,) => {
 const getManifests = async (url: string = "") => {
     try {
         const response = await instance.get(`/manifest?${url}`);
-        return response.data?.orders;
+        return response.data;
     } catch (error) {
         console.error("Error fetching orders:", error);
         if ((error as ErrorWithResponse).response) {
@@ -119,83 +103,15 @@ const getManifests = async (url: string = "") => {
     }
 };
 
-// Get order by ID
-const getOrderById = async (id: string) => {
-    try {
-        const response = await instance.get(`orders/${id}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching employee:", error);
-        if ((error as ErrorWithResponse).response) {
-            handleToast({
-                err: {
-                    response: (error as ErrorWithResponse).response
-                }
-            });
-        }
-    }
-};
 
-// Update order
-const updateOrder = async (id: string, data: Partial<IOrder>) => {
-    try {
-        const response = await instance.put(`orders/${id}`, data);
-        return response.data;
-    } catch (error) {
-        console.error("Error updating employee:", error);
-        if ((error as ErrorWithResponse).response) {
-            handleToast({
-                err: {
-                    response: (error as ErrorWithResponse).response
-                }
-            });
-        }
-    }
-};
 
-// Delete hub
-const archiveHub = async (id: string) => {
-    try {
-        const response = await instance.patch(`hub/${id}/archive`);
-        return response?.data
-    } catch (error) {
-        console.error("Error deleting employee:", error);
-        if ((error as ErrorWithResponse).response) {
-            handleToast({
-                err: {
-                    response: (error as ErrorWithResponse).response
-                }
-            });
-        }
-    }
-};
-// Delete hub
-const unarchiveHub = async (id: string) => {
-    try {
-        const response = await instance.patch(`hub/${id}/unarchive`);
-        return response?.data
-    } catch (error) {
-        console.error("Error deleting employee:", error);
-        if ((error as ErrorWithResponse).response) {
-            handleToast({
-                err: {
-                    response: (error as ErrorWithResponse).response
-                }
-            });
-        }
-    }
-};
+
 
 
 export {
-    getOrderById,
     getManifests,
-    unarchiveHub,
-    updateOrder,
-    archiveHub,
-    createOrder,
-    createBatch,
-    getBatchOrder,
-    deleteBatchItems,
-    deleteBatch
+    updateManifest,
+    createManifest,
+    getManifestById,
+    deleteOrderIds,
 };
