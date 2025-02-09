@@ -8,7 +8,7 @@ interface IEmployee {
     username: string;
     email: string;
     role: string;
-    date_of_joining: Date;
+    date_of_joining: string;
     location: {
         address: string;
         city: string;

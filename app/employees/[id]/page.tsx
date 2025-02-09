@@ -1,15 +1,20 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { createEmployee, getEmployeeById, updateEmployee } from "@/app/utils/employees";
+import {
+    createEmployee,
+    getEmployeeById,
+    updateEmployee,
+} from "@/app/utils/employees";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { getHubs } from "@/app/utils/hub";
 
 const EmployeeForm = () => {
-    const router = useRouter(); // Initialize the router
-
+    const router = useRouter();
     const { id } = useParams();
+
     const [hubs, setHubs] = useState<IHub[]>([]);
     const [formData, setFormData] = useState<IEmployee>({
         name: "",
@@ -26,71 +31,80 @@ const EmployeeForm = () => {
         section: "",
         status: "Active",
         account_id: "",
-        date_of_joining: new Date(),
+        date_of_joining: '',
         documents_id: [],
         hub_id: "",
         ref_id: "",
         remarks: "",
         _id: "",
-        // password: "Login@123",
+        password: "Login@123",
     });
+    const [passwordChanged, setPasswordChanged] = useState(false);
+
     const [loading, setLoading] = useState(true);
 
-    const handleChange = (e: {
-        target: { name: string; value: string | number };
-    }) => {
+    // Handle Input Change
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    ) => {
         const { name, value } = e.target;
+
         if (name.includes("location")) {
             const locationField = name.split(".")[1];
-            setFormData({
-                ...formData,
+            setFormData((prev) => ({
+                ...prev,
                 location: {
-                    ...formData.location,
+                    ...prev.location,
                     [locationField]: value,
                 },
-            });
+            }));
+        } else if (name === "password") {
+            setPasswordChanged(true);
+            setFormData((prev) => ({ ...prev, [name]: value }));
         } else {
-            setFormData({
-                ...formData,
-                [name]: value,
-            });
+            setFormData((prev) => ({ ...prev, [name]: value }));
         }
     };
-    const handleSubmit = async (e: { preventDefault: () => void }) => {
+
+    // Handle Form Submission
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Filter out empty, null, undefined fields, and empty arrays from formData
+        if (!passwordChanged) {
+            formData.password = "";
+        }
+
+        // Remove empty fields & null values
         const filteredData = Object.fromEntries(
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            Object.entries(formData).filter(([_, value]) => {
-                // Check for non-null, non-undefined, non-empty string, and non-empty array
-                if (Array.isArray(value)) {
-                    return value.length > 0; // Keep array only if it's not empty
-                }
-                return value !== null && value !== undefined && value !== ""; // Check for non-null, non-undefined, non-empty string
-            })
+            Object.entries(formData).filter(([_, value]) =>
+                Array.isArray(value)
+                    ? value.length > 0
+                    : value !== null && value !== undefined && value !== ""
+            )
         );
+
         try {
-            const response = id && id !== "create"
-                ? await updateEmployee(id.toString(), filteredData) // Call update API
-                : await createEmployee(filteredData); // Call create API
+            const response =
+                id && id !== "create"
+                    ? await updateEmployee(id.toString(), filteredData as IEmployee)
+                    : await createEmployee(filteredData as IEmployee);
 
             console.log("Form submitted successfully:", response);
+            router.push("/employees");
         } catch (error) {
             console.error("Error submitting form:", error);
         }
     };
 
-
+    // Fetch Employee Data by ID
     const fetchEmployeeById = useCallback(async (employeeID: string) => {
+        setLoading(true);
         try {
             const resp = await getEmployeeById(employeeID);
-            setFormData((prevData) => ({
-                ...prevData,
-                ...resp,
-            }));
-            setLoading(false);
+            setFormData(resp);
         } catch (error) {
             console.error("Error fetching employee data:", error);
+        } finally {
             setLoading(false);
         }
     }, []);
@@ -100,21 +114,24 @@ const EmployeeForm = () => {
             fetchEmployeeById(id.toString());
         } else {
             setLoading(false);
-        }
-    }, [fetchEmployeeById, id]);
+            setPasswordChanged(true);
 
-    const fetchEmployees = async () => {
+        }
+    }, [id]);
+
+    // Fetch Hubs
+    const fetchHubs = async () => {
         try {
-            const response = await getHubs(); // API endpoint to fetch hubs;
+            const response = await getHubs();
             setHubs(response);
+            setFormData((prev) => ({ ...prev, hub_id: response[0]?._id || "" }));
         } catch (error) {
             console.error("Error fetching hubs:", error);
         }
     };
 
-    // Fetch hubs from API
     useEffect(() => {
-        fetchEmployees();
+        fetchHubs();
     }, []);
 
     return (
@@ -181,6 +198,18 @@ const EmployeeForm = () => {
                     </div>
 
                     <div className="col-span-1">
+                        <label className="block text-sm font-medium">Password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            className="w-full mt-2 p-2 border rounded"
+                            required
+                        />
+                    </div>
+
+                    <div className="col-span-1">
                         <label className="block text-sm font-medium">Email</label>
                         <input
                             type="email"
@@ -218,19 +247,7 @@ const EmployeeForm = () => {
                             required
                         />
                     </div>
-                    {/* 
-                    <div className="col-span-1">
-                        <label className="block text-sm font-medium">Branch</label>
-                        <select
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            className="w-full mt-2 p-2 border rounded"
-                        >
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                        </select>
-                    </div> */}
+
                     <div className="col-span-1">
                         <label className="block text-sm font-medium">Hub</label>
                         <select
@@ -301,6 +318,17 @@ const EmployeeForm = () => {
                             value={formData.location.pincode}
                             onChange={handleChange}
                             className="w-full p-2 border rounded"
+                            required
+                        />
+                    </div>
+                    <div >
+                        <label className="block text-sm font-medium">DOJ</label>
+                        <input
+                            type="date"
+                            name="date_of_joining"
+                            value={formData.date_of_joining?.split("T")[0]}
+                            onChange={handleChange}
+                            className="w-full mt-2 p-2 border rounded"
                             required
                         />
                     </div>

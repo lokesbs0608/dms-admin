@@ -1,20 +1,26 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { getOrders } from "../utils/orders";
 import OrderDetailModal from "../components/atoms/orderModal";
+import { useAuth } from "../hooks/useAuth";
 
 const Orders = () => {
+  const { user } = useAuth()
   const [hubs, setHubs] = useState<IOrderTable[]>([]);
   const [filteredHubs, setFilteredHubs] = useState<IOrderTable[]>([]);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<IOrderTable | null>(null);
   const [showItems, setShowItems] = useState('')
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedOption, setSelectedOption] = useState(""); // Tracks the selected option
+  const [selectedStatus, setSelectedStatus] = useState(""); // Selected status option
+  const [filterString, setFilterString] = useState<string>('');
 
   const fetchOrders = async () => {
     try {
-      const response = await getOrders(); // API endpoint to fetch hubs;
+      const response = await getOrders(filterString); // API endpoint to fetch hubs;
       setHubs(response);
       setFilteredHubs(response); // Initially, filtered hubs are the same
     } catch (error) {
@@ -25,7 +31,7 @@ const Orders = () => {
   // Fetch hubs from API
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [filterString]);
 
   // Filter hubs based on search query
   useEffect(() => {
@@ -36,12 +42,39 @@ const Orders = () => {
   }, [searchQuery, hubs]);
 
 
+  const handleFilter = (type: string) => {
 
+    let hubFilter = "";
+    switch (type) {
+      case "inbound":
+        hubFilter = `sourceHubId=${user?.hub_id}`;
+        break;
+      case "outbound":
+        hubFilter = `destinationHubId=${user?.hub_id}`;
+        break;
+    }
+    setSelectedOption(`${hubFilter}`);
+    const newFilterString = `${hubFilter}`;
+    setFilterString(newFilterString);
+    console.log(newFilterString)
+  };
+
+  const handleStatusChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const statusValue = event.target.value;
+    setSelectedStatus(statusValue);
+
+    const newFilterString = statusValue === "all"
+      ? `${selectedOption}`
+      : `status=${statusValue}&${selectedOption}`;
+
+    setFilterString(newFilterString);
+    console.log(newFilterString);
+  };
 
 
   return (
     <div className="h-screen overflow-auto py-2 ">
-      <div className="flex items-center justify-between mx-2">
+      <div className="flex items-center justify-start gap-4 mx-2">
         <input
           type="text"
           placeholder="Search by Docket Number"
@@ -49,6 +82,35 @@ const Orders = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="border rounded-lg px-4 py-2 w-full max-w-sm text-gray-700 focus:ring-blue-500 focus:border-blue-500"
         />
+        <div className="flex gap-4">
+          <button
+            onClick={() => handleFilter("inbound")}
+            className={`px-4 py-2 rounded-lg font-medium ${selectedOption === "inbound" ? "bg-blue-600 text-white" : "bg-blue-200 text-blue-600"
+              } hover:bg-blue-500 hover:text-white`}
+          >
+            In Bound
+          </button>
+          <button
+            onClick={() => handleFilter("outbound")}
+            className={`px-4 py-2 rounded-lg font-medium ${selectedOption === "outbound" ? "bg-green-600 text-white" : "bg-green-200 text-green-600"
+              } hover:bg-green-500 hover:text-white`}
+          >
+            Out Bound
+          </button>
+        </div>
+        <select
+          id="status"
+          value={selectedStatus}
+          onChange={handleStatusChange}
+          className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 focus:outline-none focus:ring focus:ring-blue-300"
+        >
+          <option value={'all'}  >All</option>
+          {statusOptions.map((option) => (
+            <option key={`${option.value}_table_status`} className={`${option?.color || "text-gray-700 border-gray-300"}`} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
         <p
           onClick={() => setShowOrderModal(true)}
           className="text-white  bg-indigo-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 ml-4 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
@@ -101,56 +163,57 @@ const Orders = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredHubs?.map((order) => (
-              <><tr
+            {filteredHubs?.map((order, index) => (
+              < >
+                <tr
 
-                className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
-                key={order._id}
-              >
-                <th
-                  scope="row"
-                  onClick={() => setShowItems(showItems === order?._id ? '' : order?._id || '')}
-                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                  className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
+                  key={order._id || index} // Fallback to index if _id is missing
                 >
-                  {order.docketNumber}
-                </th>
-                <td className="px-6 py-4">{order.consignor?.name}</td>
-                <td className="px-6 py-4">{order.consignee?.name}</td>
-                <td className="px-6 py-4">{order.sourceHubId?.name}</td>
-                <td className="px-6 py-4">{order.sourceHubId?.hub_code}</td>
-                {/* <td className="px-6 py-4">{order.consignor?.city}</td> */}
-                <td className="px-6 py-4">{order.destinationHubId?.name}</td>
-                <td className="px-6 py-4">{order.destinationHubId?.hub_code}</td>
-                {/* <td className="px-6 py-4">{order.consignee?.city}</td> */}
-                <td className="px-6 py-4">{order.transport_type}</td>
-                <td className="px-6 py-4">{order.payment_method}</td>
-                <td className="px-6 py-4">
-                  <select
-                    value={order?.status}
-                    disabled={order?.status ==='Manifested'}
-                    className={`px-3 py-2 border-2 rounded-md w-full focus:outline-none transition-all ${statusOptions.find((opt) => opt.value === order?.status)?.color || "text-gray-700 border-gray-300"}`}
+                  <th
+                    scope="row"
+                    onClick={() => setShowItems(showItems === order?._id ? '' : order?._id || '')}
+                    className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                   >
-                    {statusOptions.map((option) => (
-                      <option key={option.value} className={`${option?.color || "text-gray-700 border-gray-300"}`} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-6 py-4">
-                  <p
-                   hidden={order?.status ==='Manifested'}
-                    onClick={() => { setShowOrderModal(true); setSelectedOrder(order); }}
-                    className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
-                  >
-                    Edit
-                  </p>
+                    {order.docketNumber}
+                  </th>
+                  <td className="px-6 py-4">{order.consignor?.name}</td>
+                  <td className="px-6 py-4">{order.consignee?.name}</td>
+                  <td className="px-6 py-4">{order.sourceHubId?.name}</td>
+                  <td className="px-6 py-4">{order.sourceHubId?.hub_code}</td>
+                  {/* <td className="px-6 py-4">{order.consignor?.city}</td> */}
+                  <td className="px-6 py-4">{order.destinationHubId?.name}</td>
+                  <td className="px-6 py-4">{order.destinationHubId?.hub_code}</td>
+                  {/* <td className="px-6 py-4">{order.consignee?.city}</td> */}
+                  <td className="px-6 py-4">{order.transport_type}</td>
+                  <td className="px-6 py-4">{order.payment_method}</td>
+                  <td className="px-6 py-4">
+                    <select
+                      value={order?.status}
+                      disabled={order?.status === 'Manifested'}
+                      className={`px-3 py-2 border-2 rounded-md w-full focus:outline-none transition-all ${statusOptions.find((opt) => opt.value === order?.status)?.color || "text-gray-700 border-gray-300"}`}
+                    >
+                      {statusOptions.map((option) => (
+                        <option key={`${option.value}_table_status`} className={`${option?.color || "text-gray-700 border-gray-300"}`} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p
+                      hidden={order?.status === 'Manifested'}
+                      onClick={() => { setShowOrderModal(true); setSelectedOrder(order); }}
+                      className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+                    >
+                      Edit
+                    </p>
 
-                </td>
-              </tr><tr>
+                  </td>
+                </tr><tr>
                   {showItems === order?._id && (
 
-                    <td colSpan={6} className="px-6 py-3">
+                    <td key={`${order?._id}_items`} colSpan={6} className="px-6 py-3">
                       <table className="w-full border border-gray-300 mt-2">
                         <thead>
                           <tr className="bg-gray-100 dark:bg-gray-700">
@@ -165,7 +228,6 @@ const Orders = () => {
                         <tbody>
                           {order?.items.map((item) => (
                             <tr key={item.itemId} className="border-b">
-
                               <td className="px-4 py-2 border">{item.itemId}</td>
                               <td className="px-4 py-2 border">{item.dimension?.height || "N/A"}</td>
                               <td className="px-4 py-2 border">{item.dimension?.length || "N/A"}</td>
@@ -178,7 +240,8 @@ const Orders = () => {
                     </td>
                   )}
 
-                </tr></>
+                </tr>
+              </>
 
             ))}
           </tbody>
