@@ -14,11 +14,12 @@ const Orders = () => {
   const [selectedOrder, setSelectedOrder] = useState<IOrderTable | null>(null);
   const [showItems, setShowItems] = useState('')
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedOption, setSelectedOption] = useState(""); // Tracks the selected option
+  const [selectedOption, setSelectedOption] = useState("sourceHubId"); // Tracks the selected option
   const [selectedStatus, setSelectedStatus] = useState(""); // Selected status option
-  const [filterString, setFilterString] = useState<string>('');
+  const [filterString, setFilterString] = useState<string>(`sourceHubId=${user?.hub_id}`);
 
   const fetchOrders = async () => {
+
     try {
       const response = await getOrders(filterString); // API endpoint to fetch hubs;
       setHubs(response);
@@ -30,8 +31,14 @@ const Orders = () => {
 
   // Fetch hubs from API
   useEffect(() => {
+    if (!user?.hub_id) return
     fetchOrders();
   }, [filterString]);
+
+  useEffect(() => {
+    if (!user?.hub_id) return
+    setFilterString(`sourceHubId=${user?.hub_id}`)
+  }, [user?.hub_id])
 
   // Filter hubs based on search query
   useEffect(() => {
@@ -85,14 +92,14 @@ const Orders = () => {
         <div className="flex gap-4">
           <button
             onClick={() => handleFilter("inbound")}
-            className={`px-4 py-2 rounded-lg font-medium ${selectedOption === "inbound" ? "bg-blue-600 text-white" : "bg-blue-200 text-blue-600"
+            className={`px-4 transition-all py-2 rounded-lg font-medium bg-blue-200 text-blue-600 ${selectedOption.includes('sourceHubId')  ? "opacity-100" : " scale-50 opacity-40 "
               } hover:bg-blue-500 hover:text-white`}
           >
             In Bound
           </button>
           <button
             onClick={() => handleFilter("outbound")}
-            className={`px-4 py-2 rounded-lg font-medium ${selectedOption === "outbound" ? "bg-green-600 text-white" : "bg-green-200 text-green-600"
+            className={`px-4 transition-all py-2 rounded-lg font-medium bg-green-100 opacity-80 text-green-600 ${selectedOption.includes('destinationHubId') ? "opacity-100" : " scale-50 opacity-40 "
               } hover:bg-green-500 hover:text-white`}
           >
             Out Bound
@@ -136,15 +143,11 @@ const Orders = () => {
               <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
                 Consignee Name
               </th>
-              <th scope="col" className="px-6 py-3">
-                Source
-              </th>
+           
               <th scope="col" className="px-6 py-3">
                 Source Hub Id
               </th>
-              <th scope="col" className="px-6 py-3">
-                Destination
-              </th>
+           
               <th scope="col" className="px-6 py-3">
                 Destination Hub Id
               </th>
@@ -179,10 +182,10 @@ const Orders = () => {
                   </th>
                   <td className="px-6 py-4">{order.consignor?.name}</td>
                   <td className="px-6 py-4">{order.consignee?.name}</td>
-                  <td className="px-6 py-4">{order.sourceHubId?.name}</td>
+                  {/* <td className="px-6 py-4">{order.sourceHubId?.name}</td> */}
                   <td className="px-6 py-4">{order.sourceHubId?.hub_code}</td>
                   {/* <td className="px-6 py-4">{order.consignor?.city}</td> */}
-                  <td className="px-6 py-4">{order.destinationHubId?.name}</td>
+                  {/* <td className="px-6 py-4">{order.destinationHubId?.name}</td> */}
                   <td className="px-6 py-4">{order.destinationHubId?.hub_code}</td>
                   {/* <td className="px-6 py-4">{order.consignee?.city}</td> */}
                   <td className="px-6 py-4">{order.transport_type}</td>
@@ -262,11 +265,11 @@ export default Orders;
 
 const statusOptions = [
   { label: "Picked", value: "Picked", color: "text-blue-600 border-blue-600" },
-  { label: "Reached Source Branch", value: "Reached_Source_Branch", color: "text-green-600 border-green-600" },
-  { label: "Reached Source Hub", value: "Reached_Source_Hub", color: "text-teal-600 border-teal-600" },
+ 
+  { label: "Reached Source", value: "Reached_Source_Hub", color: "text-teal-600 border-teal-600" },
   { label: "In Transit", value: "In Transit", color: "text-yellow-600 border-yellow-600" },
-  { label: "Reached Destination Hub", value: "Reached Destination Hub", color: "text-orange-600 border-orange-600" },
-  { label: "Reached Destination Branch", value: "Reached Destination Branch", color: "text-orange-500 border-orange-500" },
+  { label: "Reached Destination", value: "Reached Destination Hub", color: "text-orange-600 border-orange-600" },
+ 
   { label: "Pending", value: "Pending", color: "text-gray-600 border-gray-600" },
   { label: "Out For Delivery", value: "Out_For_Delivery", color: "text-purple-600 border-purple-600" },
   { label: "Delivered", value: "Delivered", color: "text-green-700 border-green-700" },
