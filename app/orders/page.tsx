@@ -95,14 +95,14 @@ const Orders = () => {
             className={`px-4 transition-all py-2 rounded-lg font-medium bg-blue-200 text-blue-600 ${selectedOption.includes('sourceHubId')  ? "opacity-100" : " scale-50 opacity-40 "
               } hover:bg-blue-500 hover:text-white`}
           >
-            In Bound
+            Out Bound
           </button>
           <button
             onClick={() => handleFilter("outbound")}
             className={`px-4 transition-all py-2 rounded-lg font-medium bg-green-100 opacity-80 text-green-600 ${selectedOption.includes('destinationHubId') ? "opacity-100" : " scale-50 opacity-40 "
               } hover:bg-green-500 hover:text-white`}
           >
-            Out Bound
+            In Bound
           </button>
         </div>
         <select
@@ -271,7 +271,7 @@ const statusOptions = [
   { label: "Reached Destination", value: "Reached Destination Hub", color: "text-orange-600 border-orange-600" },
  
   { label: "Pending", value: "Pending", color: "text-gray-600 border-gray-600" },
-  { label: "Out For Delivery", value: "Out_For_Delivery", color: "text-purple-600 border-purple-600" },
+  { label: "Out For Delivery", value: "Out for Delivery", color: "text-purple-600 border-purple-600" },
   { label: "Delivered", value: "Delivered", color: "text-green-700 border-green-700" },
   { label: "Cancelled", value: "Cancelled", color: "text-red-600 border-red-600" },
   { label: "Manifested", value: "Manifested", color: "text-indigo-600 border-indigo-600" },

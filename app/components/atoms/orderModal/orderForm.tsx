@@ -105,20 +105,25 @@ const OrderForm = ({ id, onChange }: Props) => {
         quantity: 1,
         itemId: "",
     });
-
     const handleAddItems = (): void => {
         const { dimension, quantity, weightGrams, weightKg } = tempItems;
-        const totalWeight = (weightKg || 0) + (weightGrams || 0) / 1000;
 
-        const dividedWeight = +totalWeight / quantity;
+        // Check if weight is missing or zero
+        if ((!weightKg || weightKg === 0) && (!weightGrams || weightGrams === 0)) {
+            alert("Please add at least one item's weight before proceeding.");
+            return;
+        }
+
+        const totalWeight = (weightKg || 0) + (weightGrams || 0) / 1000;
+        const dividedWeight = totalWeight / quantity;
 
         // Generate new items based on the quantity
         const newItems: Item[] = Array.from({ length: quantity }, () => ({
-            weight: dividedWeight.toFixed(3) || null,
+            weight: dividedWeight.toFixed(3),
             weightKg: "",
             dimension: { ...dimension },
             itemId: "", // Temporary placeholder for itemId
-            status: 'Picked'
+            status: "Picked",
         }));
 
         // Combine existing items and new items, then regenerate itemIds for all
@@ -139,6 +144,7 @@ const OrderForm = ({ id, onChange }: Props) => {
             itemId: "",
         });
     };
+
 
 
 
@@ -238,18 +244,22 @@ const OrderForm = ({ id, onChange }: Props) => {
         return errors;
     };
 
-    const handleOrderCreate = async (e: { preventDefault: () => void; }) => {
+    const handleOrderCreate = async (e: { preventDefault: () => void }) => {
         e.preventDefault();
-
 
         // Validate the form
         const errors = validateForm();
+
+        // Check if at least one item is present
+        if (items.length === 0) {
+            errors.push("Add at least one item before submitting.");
+        }
+
         if (errors.length > 0) {
             // Show errors using toast
             errors.forEach((error) => toast.error(error));
             return;
         }
-
 
         const obj: IOrder = {
             ...orderDetails,
@@ -258,40 +268,21 @@ const OrderForm = ({ id, onChange }: Props) => {
             items: items
         };
 
+        try {
+            setLoading(true);
+            const resp = id ? await updateOrder(id, obj) : await createOrder(obj);
 
-        if (id) {
-            try {
-                setLoading(true)
-                const resp = await updateOrder(id, obj);
-                if (resp) {
-                    toast.success(resp?.message)
-                    onChange(false)
-                }
-
-            } catch (error) {
-                console.log(error);
+            if (resp) {
+                toast.success(resp?.message);
+                onChange(false);
             }
-            finally {
-                setLoading(false)
-            }
-        } else {
-            try {
-                setLoading(true)
-                const resp = await createOrder(obj);
-                if (resp) {
-                    toast.success(resp?.message)
-                    onChange(false)
-                }
-
-            } catch (error) {
-                console.log(error);
-            }
-            finally {
-                setLoading(false)
-            }
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
         }
-
     };
+
 
     return (
         <form onSubmit={handleOrderCreate} className="p-4">
