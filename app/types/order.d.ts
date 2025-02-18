@@ -74,6 +74,7 @@ interface IOrder {
     delivered_by?: string | null;
     pickedVehicleNumber: string;
     drsId?: string | null;
+    amount?: string
 }
 
 interface IOrderTable {

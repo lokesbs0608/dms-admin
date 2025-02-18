@@ -27,9 +27,44 @@ interface Employee {
     name: string;
 }
 
-interface PopulatedOrder {
+// Consignee Details
+interface Consignee {
+    name: string;
+    address: string;
+    city: string;
+    pincode: string;
+    number: string;
+    company_name?: string | null;
+}
+
+// Dimensions of an Item
+interface Dimension {
+    height: number | null;
+    width: number | null;
+    length: number | null;
+}
+
+// Individual Item Details
+interface Item {
     _id: string;
-    docket_number: string;
+    itemId: string;
+    weight: number;
+    status: string;
+    dimension: Dimension;
+}
+
+// Main Delivery Order Structure
+interface DeliveryOrder {
+    _id: string;
+    consignee: Consignee;
+    items: Item[];
+    itemsCount: number;
+    totalWeight: number;
+    docketNumber: string;
+    payment_method: string;
+    amount?: string
+
+
 }
 
 interface IDRSRecord {
@@ -38,7 +73,7 @@ interface IDRSRecord {
     deliveryBoyId?: Employee;
     vehicleNumber?: string;
     status: "Out for Delivery" | "Delivered";
-    orderIds: PopulatedOrder[];
+    orderIds: DeliveryOrder[];
     created_by?: Employee;
     updated_by?: Employee;
     createdAt: string;

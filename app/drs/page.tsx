@@ -6,17 +6,18 @@ import toast from "react-hot-toast";
 import { useAuth } from "../hooks/useAuth";
 import DrsDetailsModal from "./drsForm";
 import { getAllDRS, updateDrsStatus } from "../utils/drs";
+import generateDeliveryRunSheetPDF from "./drsMaker";
 
 const Manifest = () => {
     const { user } = useAuth();
     const [manifest, setDRS] = useState<IDRSRecord[]>([]);
     const [filteredHubs, setFilteredDrs] = useState<IDRSRecord[]>([]);
     const [showOrderModal, setShowOrderModal] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState<IDRSRecord | null>(
-        null
-    );
+    const [selectedOrder, setSelectedOrder] = useState<IDRSRecord | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
-    const [filterString, setFilterString] = useState<string>(`hubId=${user?.hub_id}`);
+    const [filterString, setFilterString] = useState<string>(
+        `hubId=${user?.hub_id}`
+    );
     const [selectedOption, setSelectedOption] = useState("sourceHubID"); // Tracks the selected option
     const [selectedStatus, setSelectedStatus] = useState(""); // Selected status option
 
@@ -44,14 +45,12 @@ const Manifest = () => {
     // Filter manifest based on search query
     useEffect(() => {
         const filtered = manifest?.filter((hub) =>
-            hub?.deliveryBoyId?.name?.toLowerCase()?.includes(searchQuery?.toLowerCase())
+            hub?.deliveryBoyId?.name
+                ?.toLowerCase()
+                ?.includes(searchQuery?.toLowerCase())
         );
         setFilteredDrs(filtered);
     }, [searchQuery, manifest]);
-
-
-
-    
 
     const handleStatusChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const statusValue = event.target.value;
@@ -66,10 +65,10 @@ const Manifest = () => {
         console.log(newFilterString);
     };
 
-
-
-
-    const handleChange = async (event: { target: { value: string } }, id: string) => {
+    const handleChange = async (
+        event: { target: { value: string } },
+        id: string
+    ) => {
         try {
             const newStatus = event.target.value as "Out for Delivery" | "Delivered"; // Explicitly cast
 
@@ -77,12 +76,15 @@ const Manifest = () => {
 
             if (resp?.message === "DRS status updated successfully.") {
                 toast.success(resp?.message);
-
-              
             }
         } catch (error) {
             console.error(error);
         }
+    };
+
+    const handleDrsPrint = async (order: IDRSRecord) => {
+        console.log(order);
+        generateDeliveryRunSheetPDF(order)
     };
 
     return (
@@ -138,9 +140,12 @@ const Manifest = () => {
                             <th scope="col" className="px-6 py-3">
                                 Vehicle No
                             </th>
-                           
+
                             <th scope="col" className="px-6 py-3">
-                                Total order
+                                Total Weight
+                            </th>
+                            <th scope="col" className="px-6 py-3">
+                                Total Pcs
                             </th>
 
                             <th scope="col" className="px-6 py-3">
@@ -164,11 +169,21 @@ const Manifest = () => {
                                     {order.deliveryBoyId?.name}
                                 </th>
                                 <td className="px-6 py-4">{order.hubId.name}</td>
+                                <td className="px-6 py-4">{order.vehicleNumber}</td>
+
                                 <td className="px-6 py-4">
-                                    {order.vehicleNumber}
+                                    {order.orderIds?.reduce(
+                                        (sum, items) => sum + (items?.totalWeight || 0),
+                                        0
+                                    )}
                                 </td>
-                               
-                                <td className="px-6 py-4">{order.orderIds?.length}</td>
+                                <td className="px-6 py-4">
+                                    {order.orderIds?.reduce(
+                                        (sum, items) => sum + (items?.itemsCount || 0),
+                                        0
+                                    )}
+                                </td>
+
                                 <td className="px-6 py-4">
                                     <select
                                         value={order?.status}
@@ -189,7 +204,7 @@ const Manifest = () => {
                                         ))}
                                     </select>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 flex items-center gap-4">
                                     <p
                                         onClick={() => {
                                             setShowOrderModal(true);
@@ -198,6 +213,14 @@ const Manifest = () => {
                                         className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
                                     >
                                         Edit
+                                    </p>
+                                    <p
+                                        onClick={() => {
+                                            handleDrsPrint(order);
+                                        }}
+                                        className="font-medium text-gray-600 dark:text-white hover:underline"
+                                    >
+                                        Print
                                     </p>
                                 </td>
                             </tr>

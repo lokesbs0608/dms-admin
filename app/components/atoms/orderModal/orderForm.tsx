@@ -811,6 +811,24 @@ const OrderForm = ({ id, onChange }: Props) => {
                 </div>
             )}
 
+            <div>
+                <div className="mb-6">
+                    <h2 className="font-bold mb-2">Total Amount</h2>
+                    <input
+                        type="text" // Use "text" to avoid built-in browser formatting for "number"
+                        placeholder="Total Amount"
+                        className="w-full p-2 border mb-2 rounded"
+                        value={orderDetails?.amount}
+                        name="amount"
+                        
+                        onChange={(e) => {
+                            const value = e.target.value.replace(/[^0-9]/g, ""); // Remove non-numeric characters
+                            setOrderDetails({ ...orderDetails, amount: value });
+                        }}
+                    />
+                </div>
+            </div>
+
             {/* Submit Button */}
             <button
                 disabled={
