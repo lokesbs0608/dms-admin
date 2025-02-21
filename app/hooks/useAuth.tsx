@@ -28,7 +28,7 @@ export const useAuth = () => {
     // Authentication state
     const router = useRouter();
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | ICustomer |  null>(null);
 
     // Centralized error handler
     const handleError = (err: unknown, defaultMessage: string) => {
@@ -49,8 +49,13 @@ export const useAuth = () => {
                     // Update isAuthenticated and user after authentication
                     setUser(response?.data?.user || null);
                     setIsAuthenticated(true);
-                    router.push("/"); // Redirect to the home page
-                    window.location.reload()
+                    if (response?.data?.user?.type === 'customer') {
+                        router.push('/customer-order')
+                    } else {
+                        router.push("/"); // Redirect to the home page
+                        window.location.reload()
+                    }
+
                 });
             }
         } catch (err) {

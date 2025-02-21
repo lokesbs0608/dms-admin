@@ -19,7 +19,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = useAuth(); // Fetch authentication status
+  const { isAuthenticated, user } = useAuth(); // Fetch authentication status
 
   return (
     <html lang="en">
@@ -27,7 +27,7 @@ export default function RootLayout({
         <div className="md:flex">
           <Toaster />
           {/* Render Sidebar if authenticated */}
-          {isAuthenticated && (
+          {isAuthenticated && user?.type !== 'customer' && (
             <aside className="md:w-[10%] lg:w-[12%] w-full">
               <Sidebar items={SidebarData} />
             </aside>

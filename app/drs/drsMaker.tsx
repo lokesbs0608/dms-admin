@@ -66,10 +66,13 @@ const generateDeliveryRunSheetPDF = (orderData: IDRSRecord) => {
         },
         columnStyles: {
             0: { cellWidth: 10 }, // Adjust width as needed
-            1: { cellWidth: 20 },
-            2: { cellWidth: 20 },
+            1: { cellWidth: 25 },
+            2: { cellWidth: 10 },
             3: { cellWidth: 20 },
-            4: { cellWidth: 50 },
+            4: { cellWidth: 30 },
+            5: { cellWidth: 20 },
+            6: { cellWidth: 15 },
+            7: { cellWidth: 50 },
         },
         theme: "striped", // Optional, just for better readability
         showHead: "everyPage", // Repeat header on each page
