@@ -1,6 +1,6 @@
 interface Order {
     _id: string;
-    docket_number: string;
+    docketNumber: string;
 }
 
 interface IDRSForm {
@@ -79,6 +79,7 @@ interface IDRSRecord {
     createdAt: string;
     updatedAt: string;
     gpsLocation: string
+    code?: string
 }
 
 interface TableColumn {

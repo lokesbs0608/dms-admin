@@ -28,7 +28,7 @@ export const useAuth = () => {
     // Authentication state
     const router = useRouter();
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [user, setUser] = useState<User | ICustomer |  null>(null);
+    const [user, setUser] = useState<User | null>(null);
 
     // Centralized error handler
     const handleError = (err: unknown, defaultMessage: string) => {

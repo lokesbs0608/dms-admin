@@ -32,14 +32,14 @@ const generateDeliveryRunSheetPDF = (orderData: IDRSRecord) => {
 
     // Table Data
     const tableColumn = [
-        "Sr. No",
-        "AWB Number",
-        "PCS",
+        "No",
+        "AWB No.",
+        "PC'S",
         "Weight",
-        "Consignee Name",
-        "Payment Method / Amount",
+        "Consignee ",
+        "PMT.Mode / Amount",
         "Time",
-        "Receiver Name and Seal"
+        "Acknowledgment"
     ];
 
     const tableRows = orderData.orderIds.map((order, index) => [
@@ -91,7 +91,7 @@ const generateDeliveryRunSheetPDF = (orderData: IDRSRecord) => {
     });
 
     // Save PDF
-    doc.save("Delivery_Run_Sheet.pdf");
+    doc.save("Delivery_Run_Sheet{}.pdf");
 };
 
 export default generateDeliveryRunSheetPDF;

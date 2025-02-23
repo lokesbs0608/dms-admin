@@ -114,7 +114,7 @@ const Manifest = () => {
                 <div className="flex gap-4">
                     <button
                         onClick={() => handleFilter("inbound")}
-                        className={`px-4 transition-all py-2 rounded-lg font-medium bg-blue-200 text-blue-600 ${selectedOption.includes('sourceHubID')  ? "opacity-100" : " scale-50 opacity-40 "
+                        className={`px-4 transition-all py-2 rounded-lg font-medium bg-blue-200 text-blue-600 ${selectedOption.includes('sourceHubID') ? "opacity-100" : " scale-50 opacity-40 "
                             } hover:bg-blue-500 hover:text-white`}
                     >
                         Out going
@@ -155,7 +155,11 @@ const Manifest = () => {
                     </caption>
 
                     <thead className="text-xs text-[#1d4ed8] uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+
                         <tr>
+                            <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
+                                Manifest Code
+                            </th>
                             <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
                                 Loader Code
                             </th>
@@ -191,6 +195,12 @@ const Manifest = () => {
                                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
                                 key={order._id}
                             >
+                                <th
+                                    scope="row"
+                                    className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                                >
+                                    {order?.code || 'NA'}
+                                </th>
                                 <th
                                     scope="row"
                                     className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"

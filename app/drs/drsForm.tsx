@@ -100,17 +100,17 @@ const DrsDetailsModal = ({ isOpen, onClose, id }: Props) => {
             const formattedOrderIDs = orders.map(
                 (order: { _id: string; docketNumber: string }) => ({
                     _id: order._id,
-                    docket_number: order?.docketNumber,
+                    docketNumber: order?.docketNumber,
                 })
             );
 
             // Update manifest data with the new orderIDs
-            const updatedDrstData = {
+            const updatedDrsData = {
                 ...drsData,
                 orderIds: [...drsData?.orderIds, ...formattedOrderIDs],
             };
 
-            setDrsData(updatedDrstData);
+            setDrsData(updatedDrsData);
         } catch (error) {
             console.error("Error processing order IDs:", error);
             throw new Error("Failed to process order IDs");
@@ -148,7 +148,6 @@ const DrsDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
     const deleteOrderIdsFromTable = (idsToDelete: string[]) => {
         try {
-            console.log("IDs to delete:", idsToDelete);
 
             if (!drsData?.orderIds || !Array.isArray(drsData.orderIds)) {
                 throw new Error("Manifest data or order IDs are invalid");
@@ -169,13 +168,13 @@ const DrsDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
             // Update state only if something is actually removed
             if (updatedOrderIDs.length !== drsData.orderIds.length) {
-                const updatedDrstData = {
+                const updatedDrsData = {
                     ...drsData,
                     orderIds: updatedOrderIDs,
                 };
 
-                setDrsData(updatedDrstData);
-                console.log("Updated Manifest Data after deletion:", updatedDrstData);
+                setDrsData(updatedDrsData);
+                console.log("Updated Manifest Data after deletion:", updatedDrsData);
             }
 
             // If some IDs were not found locally, call deleteOrder for those IDs
@@ -560,7 +559,7 @@ const DrsDetailsModal = ({ isOpen, onClose, id }: Props) => {
                                                             scope="row"
                                                             className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                                                         >
-                                                            {order?.docket_number}
+                                                            {order?.docketNumber}
                                                         </th>
 
                                                         <td className="px-6 py-4">

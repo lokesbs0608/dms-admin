@@ -69,7 +69,7 @@ const getAllDRS = async (url: string) => {
 const getDRSById = async (id: string) => {
     try {
         const response = await instance.get(`/drs/${id}`,);
-        return response.data?.drsList;
+        return response.data?.drs;
     } catch (error) {
         console.error("Error fetching drs:", error);
         if ((error as ErrorWithResponse).response) {

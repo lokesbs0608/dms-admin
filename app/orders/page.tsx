@@ -92,7 +92,7 @@ const Orders = () => {
         <div className="flex gap-4">
           <button
             onClick={() => handleFilter("inbound")}
-            className={`px-4 transition-all py-2 rounded-lg font-medium bg-blue-200 text-blue-600 ${selectedOption.includes('sourceHubId')  ? "opacity-100" : " scale-50 opacity-40 "
+            className={`px-4 transition-all py-2 rounded-lg font-medium bg-blue-200 text-blue-600 ${selectedOption.includes('sourceHubId') ? "opacity-100" : " scale-50 opacity-40 "
               } hover:bg-blue-500 hover:text-white`}
           >
             Out Bound
@@ -143,13 +143,13 @@ const Orders = () => {
               <th scope="col" className="px-6 py-3 text-[#1d4ed8]">
                 Consignee Name
               </th>
-           
+
               <th scope="col" className="px-6 py-3">
-                Source Hub Id
+                Origin Hub
               </th>
-           
+
               <th scope="col" className="px-6 py-3">
-                Destination Hub Id
+                Destination Hub
               </th>
               <th scope="col" className="px-6 py-3">
                 Transport Type
@@ -183,10 +183,10 @@ const Orders = () => {
                   <td className="px-6 py-4">{order.consignor?.name}</td>
                   <td className="px-6 py-4">{order.consignee?.name}</td>
                   {/* <td className="px-6 py-4">{order.sourceHubId?.name}</td> */}
-                  <td className="px-6 py-4">{order.sourceHubId?.hub_code}</td>
+                  <td className="px-6 py-4">{order.sourceHubId?.name}</td>
                   {/* <td className="px-6 py-4">{order.consignor?.city}</td> */}
                   {/* <td className="px-6 py-4">{order.destinationHubId?.name}</td> */}
-                  <td className="px-6 py-4">{order.destinationHubId?.hub_code}</td>
+                  <td className="px-6 py-4">{order.destinationHubId?.name}</td>
                   {/* <td className="px-6 py-4">{order.consignee?.city}</td> */}
                   <td className="px-6 py-4">{order.transport_type}</td>
                   <td className="px-6 py-4">{order.payment_method}</td>
@@ -265,14 +265,15 @@ export default Orders;
 
 const statusOptions = [
   { label: "Picked", value: "Picked", color: "text-blue-600 border-blue-600" },
- 
-  { label: "Reached Source", value: "Reached_Source_Hub", color: "text-teal-600 border-teal-600" },
+
+  { label: "Reached Origin Hub", value: "Reached Source Hub", color: "text-teal-600 border-teal-600" },
   { label: "In Transit", value: "In Transit", color: "text-yellow-600 border-yellow-600" },
-  { label: "Reached Destination", value: "Reached Destination Hub", color: "text-orange-600 border-orange-600" },
- 
+  { label: "Reached Destination Hub", value: "Reached Destination Hub", color: "text-orange-600 border-orange-600" },
+
   { label: "Pending", value: "Pending", color: "text-gray-600 border-gray-600" },
   { label: "Out For Delivery", value: "Out for Delivery", color: "text-purple-600 border-purple-600" },
   { label: "Delivered", value: "Delivered", color: "text-green-700 border-green-700" },
   { label: "Cancelled", value: "Cancelled", color: "text-red-600 border-red-600" },
   { label: "Manifested", value: "Manifested", color: "text-indigo-600 border-indigo-600" },
+  { label: "RTO", value: "RTO", color: "text-red-600 border-red-600" },
 ];

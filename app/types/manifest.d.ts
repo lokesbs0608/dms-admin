@@ -45,5 +45,6 @@ interface IManifestTable {
     actualWeight: string;
     status: 'In Transit' | 'Delivered' | 'Pending';
     transport_type: string | "air" | "surface" | "train" | "sea";
+    code?: string
 
 }

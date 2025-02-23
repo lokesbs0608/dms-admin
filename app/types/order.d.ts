@@ -22,16 +22,14 @@ interface ItemDetails {
     itemId: string;
     status:
     | "Picked"
-    | "Reached_Source_Branch"
-    | "Reached_Source_Hub"
+    | "Reached Origin Hub"
     | "In Transit"
-    | "Reached_Destination_Hub"
-    | "Reached_Destination_Branch"
+    | "Reached Destination Hub"
     | "Pending"
-    | "Out_For_Delivery"
+    | "Out For Delivery"
     | "Delivered"
     | "Cancelled"
-    | "Manifested";
+    | "RTO";
 }
 
 interface IHistoryDetails {
@@ -56,15 +54,14 @@ interface IOrder {
     destinationHubId: string;
     status:
     | "Picked"
-    | "Reached_Source_Branch"
-    | "Reached_Source_Hub"
+    | "Reached Origin Hub"
     | "In Transit"
-    | "Reached_Destination_Hub"
-    | "Reached_Destination_Branch"
+    | "Reached Destination Hub"
     | "Pending"
-    | "Out_For_Delivery"
+    | "Out For Delivery"
     | "Delivered"
-    | "Cancelled";
+    | "Cancelled"
+    | "RTO";
     deliveredLocation?: string | null;
     deliveredDate?: Date | null;
     deliveredTime?: string | null;
@@ -74,7 +71,9 @@ interface IOrder {
     delivered_by?: string | null;
     pickedVehicleNumber: string;
     drsId?: string | null;
-    amount?: string
+    amount?: string;
+    pickup_date?: Date | string;
+    delivery_date?: Date | string;
 }
 
 interface IOrderTable {
@@ -101,7 +100,8 @@ interface IOrderTable {
     | "Out_For_Delivery"
     | "Delivered"
     | "Cancelled"
-    | "Manifested";
+    | "Manifested"
+    | "RTO";
     deliveredLocation?: string | null;
     deliveredDate?: Date | null;
     deliveredTime?: string | null;
@@ -111,6 +111,8 @@ interface IOrderTable {
     delivered_by?: string | null;
     pickedVehicleNumber: string;
     drsId?: string | null;
+    pickup_date?: Date | string;
+    delivery_date?: Date | string;
 }
 
 // Define the Item type

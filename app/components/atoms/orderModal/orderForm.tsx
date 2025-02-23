@@ -21,27 +21,26 @@ type Item = {
         length: string;
     };
     itemId: string;
-    price?: string
+    price?: string;
     status:
     | "Picked"
-    | "Reached_Source_Branch"
-    | "Reached_Source_Hub"
+    | "Reached Origin Hub"
     | "In Transit"
-    | "Reached_Destination_Hub"
-    | "Reached_Destination_Branch"
+    | "Reached Destination Hub"
     | "Pending"
-    | "Out_For_Delivery"
+    | "Out For Delivery"
     | "Delivered"
-    | "Cancelled";
+    | "Cancelled"
+    | "RTO";
 };
 
 interface Props {
-    id?: string;  // Optional property
-    onChange: (value: boolean) => void;  // Correct function signature
+    id?: string; // Optional property
+    onChange: (value: boolean) => void; // Correct function signature
 }
 
 const OrderForm = ({ id, onChange }: Props) => {
-    const { user } = useAuth()
+    const { user } = useAuth();
     const [orderDetails, setOrderDetails] = useState<IOrder>({
         destinationHubId: "",
         docketNumber: "",
@@ -86,7 +85,7 @@ const OrderForm = ({ id, onChange }: Props) => {
         pincode: "",
         number: "",
     });
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(false);
     const [items, setItems] = useState<Item[]>([]);
     const [customers, setCustomers] = useState<ICustomer[]>([]);
     const [hubs, setHubs] = useState<IHub[]>([]);
@@ -145,9 +144,6 @@ const OrderForm = ({ id, onChange }: Props) => {
         });
     };
 
-
-
-
     const handleRemoveItem = (index: number): void => {
         setItems(items.filter((_, i) => i !== index));
     };
@@ -178,7 +174,9 @@ const OrderForm = ({ id, onChange }: Props) => {
                 if (id) {
                     const resp = await getOrderById(id);
                     setOrderDetails(resp);
-                    setItems(resp?.items)
+                    setItems(resp?.items);
+                    setConsignee(resp?.consignee);
+                    setConsignor(resp?.consignor);
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -186,13 +184,11 @@ const OrderForm = ({ id, onChange }: Props) => {
         };
 
         if (user?.hub_id) {
-            setOrderDetails({ ...orderDetails, sourceHubId: user?.hub_id })
+            setOrderDetails({ ...orderDetails, sourceHubId: user?.hub_id });
         }
 
         fetchData();
     }, [id, user]);
-
-
 
     const validateForm = () => {
         const errors = [];
@@ -202,17 +198,18 @@ const OrderForm = ({ id, onChange }: Props) => {
             errors.push("Docket number is required.");
         }
 
-        // Vehicle number validation
-        const vehicleRegex = /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/;
-        if (!vehicleRegex.test(orderDetails.pickedVehicleNumber)) {
-            errors.push("Enter a valid vehicle number (e.g., KA 02 KR 0232).");
-        }
+        // // Vehicle number validation
+        // const vehicleRegex = /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/;
+        // if (!vehicleRegex.test(orderDetails.pickedVehicleNumber)) {
+        //     errors.push("Enter a valid vehicle number (e.g., KA 02 KR 0232).");
+        // }
 
         const phoneRegex = /^[6-9][0-9]{9}$/;
         const pincodeRegex = /^[1-9][0-9]{5}$/;
+        console.log(orderDetails, "orderDetails");
         if (!orderDetails?.consigneeId) {
             // Phone number validation
-            if (!phoneRegex.test(orderDetails?.consignee?.number || '')) {
+            if (!phoneRegex.test(orderDetails?.consignee?.number || "")) {
                 errors.push("Enter a valid consignee phone number.");
             }
 
@@ -224,19 +221,17 @@ const OrderForm = ({ id, onChange }: Props) => {
             }
         }
         if (!orderDetails?.consignorId) {
-
-            if (!phoneRegex.test(orderDetails?.consignor?.number || "")) {
+            if (!phoneRegex.test(consignor?.number || "")) {
                 errors.push("Enter a valid consignor phone number.");
             }
 
-
-            if (!pincodeRegex.test(orderDetails?.consignor?.pincode || '')) {
+            if (!pincodeRegex.test(consignor?.pincode || "")) {
                 errors.push("Enter a valid consignor pincode.");
             }
 
             // Address validation
 
-            if (!orderDetails?.consignor?.address?.trim()) {
+            if (!consignor?.address?.trim()) {
                 errors.push("Consignor address is required.");
             }
         }
@@ -265,7 +260,7 @@ const OrderForm = ({ id, onChange }: Props) => {
             ...orderDetails,
             consignor: consignor,
             consignee: consignee,
-            items: items
+            items: items,
         };
 
         try {
@@ -283,14 +278,15 @@ const OrderForm = ({ id, onChange }: Props) => {
         }
     };
 
-
     return (
         <form onSubmit={handleOrderCreate} className="p-4">
             <h1 className="text-2xl font-bold mb-6">Create Order</h1>
 
             <div className="grid grid-cols-3 gap-6">
                 <div className="mb-6">
-                    <h2 className="font-bold mb-2">Docket Number</h2>
+                    <h2 className="font-bold mb-2">
+                        Docket Number <span className="text-red-800">*</span>
+                    </h2>
                     <input
                         type="text" // Use "text" to avoid built-in browser formatting for "number"
                         placeholder="Docket Number"
@@ -313,7 +309,6 @@ const OrderForm = ({ id, onChange }: Props) => {
                         className="w-full p-2 border mb-2 rounded"
                         value={orderDetails?.pickedVehicleNumber || ""}
                         name="pickedVehicleNumber"
-                        required
                         onChange={(e) => {
                             const value = e.target.value.toUpperCase(); // Convert to uppercase
                             const regex = /^[A-Z0-9]*$/; // Allow only letters and numbers during typing
@@ -329,14 +324,16 @@ const OrderForm = ({ id, onChange }: Props) => {
                         onBlur={() => {
                             const regex = /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/; // Full validation on blur
                             if (!regex.test(orderDetails?.pickedVehicleNumber || "")) {
-                                alert('Enter Valid Vehicle Number')
+                                alert("Enter Valid Vehicle Number");
                             }
                         }}
                     />
                 </div>
 
                 <div className="mb-6">
-                    <h2 className="font-bold mb-2">Transport Type</h2>
+                    <h2 className="font-bold mb-2">
+                        Transport Type <span className="text-red-800">*</span>{" "}
+                    </h2>
                     <select
                         required
                         name={"transport_type"}
@@ -359,7 +356,9 @@ const OrderForm = ({ id, onChange }: Props) => {
             <div className="grid grid-cols-2 gap-6">
                 {/* Consignor Section */}
                 <div className="mb-6">
-                    <h2 className="font-bold mb-2">Consignor</h2>
+                    <h2 className="font-bold mb-2">
+                        Consignor <span className="text-red-800">*</span>
+                    </h2>
 
                     <select
                         name="consignorId"
@@ -374,7 +373,7 @@ const OrderForm = ({ id, onChange }: Props) => {
                             ?.filter((item) => item._id !== orderDetails?.consigneeId) // Exclude the selected consignor
                             .map((item) => (
                                 <option key={item?._id} value={item?._id}>
-                                    {item?.company_name}
+                                    {item?.name}
                                 </option>
                             ))}
                     </select>
@@ -472,9 +471,10 @@ const OrderForm = ({ id, onChange }: Props) => {
 
                 {/* Consignee Section */}
                 <div className="mb-6">
-                    <h2 className="font-bold mb-2">Consignee</h2>
+                    <h2 className="font-bold mb-2">
+                        Consignee <span className="text-red-800">*</span>
+                    </h2>
                     <select
-                        required
                         onChange={(e) =>
                             setOrderDetails({ ...orderDetails, consigneeId: e.target.value })
                         }
@@ -486,7 +486,7 @@ const OrderForm = ({ id, onChange }: Props) => {
                             ?.filter((item) => item._id !== orderDetails?.consignorId) // Exclude the selected consignor
                             .map((item) => (
                                 <option key={item?._id} value={item?._id}>
-                                    {item?.company_name}
+                                    {item?.name}
                                 </option>
                             ))}
                     </select>
@@ -577,7 +577,6 @@ const OrderForm = ({ id, onChange }: Props) => {
                                 required
                                 id="number"
                             />
-
                         </div>
                     )}
                 </div>
@@ -586,7 +585,9 @@ const OrderForm = ({ id, onChange }: Props) => {
             {/* Source/Destination Hub */}
             <div className="grid grid-cols-3 gap-4">
                 <div>
-                    <h2 className="font-bold mb-2">Source Hub Id</h2>
+                    <h2 className="font-bold mb-2">
+                        Origin Hub <span className="text-red-800">*</span>
+                    </h2>
                     <select
                         required
                         value={orderDetails?.sourceHubId}
@@ -606,7 +607,9 @@ const OrderForm = ({ id, onChange }: Props) => {
                     </select>
                 </div>
                 <div>
-                    <h2 className="font-bold mb-2">Destination Hub Id</h2>
+                    <h2 className="font-bold mb-2">
+                        Destination Hub <span className="text-red-800">*</span>
+                    </h2>
                     <select
                         required
                         onChange={(e) =>
@@ -631,7 +634,9 @@ const OrderForm = ({ id, onChange }: Props) => {
 
                 {/* Payment Method */}
                 <div className="mb-6">
-                    <h2 className="font-bold mb-2">Payment Method</h2>
+                    <h2 className="font-bold mb-2">
+                        Payment Method <span className="text-red-800">*</span>
+                    </h2>
                     <select
                         required
                         value={orderDetails?.payment_method}
@@ -659,7 +664,7 @@ const OrderForm = ({ id, onChange }: Props) => {
                         className="p-2 bg-blue-500 text-white rounded mb-4"
                         onClick={() => setIsAddingItems(true)}
                     >
-                        Add Items
+                        Next
                     </button>
                     <ul className="space-y-2">
                         {items.map((item, index) => (
@@ -692,7 +697,9 @@ const OrderForm = ({ id, onChange }: Props) => {
                     <div className="relative bg-white p-6 rounded shadow-lg w-96">
                         <h2 className="text-xl font-bold mb-4">Add Items</h2>
                         <div className="mb-4">
-                            <label className="block mb-2">Weight :</label>
+                            <label className="block mb-2">
+                                Weight <span className="text-red-800">*</span> :
+                            </label>
                             <div className="grid grid-cols-2 gap-6">
                                 <input
                                     type="number"
@@ -778,7 +785,9 @@ const OrderForm = ({ id, onChange }: Props) => {
                             </div>
                         </div>
                         <div className="mb-4">
-                            <label className="block mb-2">Quantity:</label>
+                            <label className="block mb-2">
+                                Quantity <span className="text-red-800">*</span> :
+                            </label>
                             <input
                                 type="number"
                                 required
@@ -811,7 +820,7 @@ const OrderForm = ({ id, onChange }: Props) => {
                 </div>
             )}
 
-            <div>
+            <div className="grid grid-cols-3 gap-4">
                 <div className="mb-6">
                     <h2 className="font-bold mb-2">Total Amount</h2>
                     <input
@@ -820,10 +829,50 @@ const OrderForm = ({ id, onChange }: Props) => {
                         className="w-full p-2 border mb-2 rounded"
                         value={orderDetails?.amount}
                         name="amount"
-                        
                         onChange={(e) => {
                             const value = e.target.value.replace(/[^0-9]/g, ""); // Remove non-numeric characters
                             setOrderDetails({ ...orderDetails, amount: value });
+                        }}
+                    />
+                </div>
+                <div className="mb-6">
+                    <h2 className="font-bold mb-2">
+                        Pickup Date <span className="text-red-800">*</span>
+                    </h2>
+                    <input
+                        type="date"
+                        placeholder="Pickup Date"
+                        className="w-full p-2 border mb-2 rounded"
+                        value={
+                            orderDetails?.pickup_date
+                                ? new Date(orderDetails.pickup_date).toISOString().split("T")[0]
+                                : ""
+                        }
+                        name="pickup_date"
+                        onChange={(e) => {
+                            setOrderDetails({ ...orderDetails, pickup_date: e.target.value });
+                        }}
+                    />
+                </div>
+                <div className="mb-6">
+                    <h2 className="font-bold mb-2">Delivered Date</h2>
+                    <input
+                        type="date"
+                        placeholder="Delivery Date"
+                        className="w-full p-2 border mb-2 rounded"
+                        value={
+                            orderDetails?.delivery_date
+                                ? new Date(orderDetails.delivery_date)
+                                    .toISOString()
+                                    .split("T")[0]
+                                : ""
+                        }
+                        name="delivery_date"
+                        onChange={(e) => {
+                            setOrderDetails({
+                                ...orderDetails,
+                                delivery_date: e.target.value,
+                            });
                         }}
                     />
                 </div>
@@ -832,7 +881,9 @@ const OrderForm = ({ id, onChange }: Props) => {
             {/* Submit Button */}
             <button
                 disabled={
-                    !orderDetails?.docketNumber || orderDetails?.items?.length < 0 || loading
+                    !orderDetails?.docketNumber ||
+                    orderDetails?.items?.length < 0 ||
+                    loading
                 }
                 type="submit"
                 className="p-3 bg-green-500 text-white rounded w-full"
