@@ -6,6 +6,7 @@ import { getOrders } from "../utils/orders";
 import { useAuth } from "../hooks/useAuth";
 import Link from "next/link";
 import { logout } from "../network/helper";
+import { exportToExcel } from "../utils/uploadToEcxel";
 
 const CustomerOrder = () => {
     const { user } = useAuth();
@@ -77,6 +78,27 @@ const CustomerOrder = () => {
         console.log(newFilterString);
     };
 
+    const handleDownload = () => {
+        const keys = {
+            docketNumber: "Docket Number",
+            "consignor.name": "Consignor Name",
+            "consignee.name": "Consignee Name",
+            "sourceHubId.name": "Origin Hub",
+            "destinationHubId.name": "Destination Hub",
+            transport_type: "Transport Type",
+            payment_method: "Payment Method",
+            status: "Order Status",
+            docket_url: "Acknowledgement",
+            pickup_date: "Pickup date",
+            delivery_date: "Delivered Data",
+        };
+
+        const currentDate = new Date().toLocaleDateString("en-GB").replace(/\//g, "-");
+        const fileName = `Orders_Report${currentDate}`;
+
+        exportToExcel(filteredHubs, keys, fileName);
+    };
+
     return (
         <div className="h-screen overflow-auto py-2 ">
             <div className="flex items-center justify-between gap-4">
@@ -126,6 +148,12 @@ const CustomerOrder = () => {
                             </option>
                         ))}
                     </select>
+                    <p
+                        onClick={() => handleDownload()}
+                        className="text-white  cursor-pointer  bg-indigo-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 ml-4 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                    >
+                        Download Report
+                    </p>
                 </div>
                 <div className="flex items-end justify-end gap-4">
                     <div>{user?.company_name}</div>
@@ -173,8 +201,12 @@ const CustomerOrder = () => {
                             <th scope="col" className="px-6 py-3">
                                 Payment Method
                             </th>
+
                             <th scope="col" className="px-6 py-3">
                                 Status
+                            </th>
+                            <th scope="col" className="px-6 py-3">
+                                Acknowledgement
                             </th>
                         </tr>
                     </thead>
@@ -218,6 +250,23 @@ const CustomerOrder = () => {
                                             {statusOptions.find((opt) => opt.value === order?.status)
                                                 ?.label || "Unknown"}
                                         </span>
+                                    </td>
+                                    <td className="flex items-center justify-center">
+                                        {order?.docket_url ? (
+                                            <Link href={order?.docket_url} target="_blank">
+                                                <svg
+                                                    width="20"
+                                                    height="20"
+                                                    viewBox="0 0 25.6 25.6"
+                                                    className="icon"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                >
+                                                    <path d="M12.8 4c8 0 12.8 8.8 12.8 8.8s-4.8 8.8-12.8 8.8S0 12.8 0 12.8 4.8 4 12.8 4m0 1.6c-5.632 0-9.603 5.202-10.92 7.2C3.195 14.797 7.166 20 12.8 20c5.632 0 9.603-5.202 10.92-7.2-1.315-1.997-5.286-7.2-10.92-7.2m0 1.6a5.6 5.6 0 1 1 0 11.2 5.6 5.6 0 0 1 0-11.2m0 1.6a4.005 4.005 0 0 0-4 4c0 2.205 1.794 4 4 4s4-1.795 4-4-1.794-4-4-4" />
+                                                </svg>
+                                            </Link>
+                                        ) : (
+                                            <div className="p-4 flex flex-col items-center">na</div>
+                                        )}
                                     </td>
                                 </tr>
                                 <tr>

@@ -4,7 +4,12 @@ import { getOrders } from "../utils/orders";
 import { useAuth } from "../hooks/useAuth";
 import toast from "react-hot-toast";
 import { getEmployees } from "../utils/employees";
-import { createDRS, deleteDRSOrderById, getDRSById, updateDRS } from "../utils/drs";
+import {
+    createDRS,
+    deleteDRSOrderById,
+    getDRSById,
+    updateDRS,
+} from "../utils/drs";
 
 interface Props {
     isOpen: boolean;
@@ -119,7 +124,7 @@ const DrsDetailsModal = ({ isOpen, onClose, id }: Props) => {
 
     const deleteOrder = async (idsToDelete: string) => {
         try {
-            const filterString = `status=Pending&status=Picked&sourceHubId=${drsData.hubId || ""
+            const filterString = `status=Pending&status=Picked&status=Reached Destination Hub&sourceHubId=${drsData.hubId || ""
                 }`;
 
             const resp = await deleteDRSOrderById(drsData._id || "", idsToDelete);
@@ -147,19 +152,11 @@ const DrsDetailsModal = ({ isOpen, onClose, id }: Props) => {
     };
 
     const deleteOrderIdsFromTable = (idsToDelete: string[]) => {
+        console.log(idsToDelete, "idsToDelete");
         try {
-
             if (!drsData?.orderIds || !Array.isArray(drsData.orderIds)) {
                 throw new Error("Manifest data or order IDs are invalid");
             }
-
-            // Find IDs that exist in the current order list
-            const existingOrderIDs = drsData.orderIds.map(
-                (order: { _id: string }) => order._id
-            );
-            const idsNotFound: string[] = idsToDelete.filter(
-                (id) => !existingOrderIDs.includes(id)
-            );
 
             // Filter out the orders that should be deleted
             const updatedOrderIDs = drsData.orderIds.filter(
@@ -172,15 +169,16 @@ const DrsDetailsModal = ({ isOpen, onClose, id }: Props) => {
                     ...drsData,
                     orderIds: updatedOrderIDs,
                 };
-
                 setDrsData(updatedDrsData);
-                console.log("Updated Manifest Data after deletion:", updatedDrsData);
             }
+            // Find IDs that are not found in filteredOrder
+            const idsNotFound2 = idsToDelete.filter(
+                (id) => !filteredOrder.some((item) => item?._id === id)
+            );
 
             // If some IDs were not found locally, call deleteOrder for those IDs
-            if (idsNotFound.length > 0) {
-                console.log("IDs not found locally, calling deleteOrder:", idsNotFound);
-                deleteOrder(idsNotFound.join(",")); // Assuming deleteOrder expects a string of IDs
+            if (idsNotFound2.length > 0) {
+                deleteOrder(idsNotFound2.join(",")); // Assuming deleteOrder expects a string of IDs
             }
         } catch (error) {
             console.error("Error deleting order IDs:", error);
@@ -224,8 +222,13 @@ const DrsDetailsModal = ({ isOpen, onClose, id }: Props) => {
         if (id) {
             try {
                 const resp = await updateDRS(id, drsData);
-                if (resp?.message === "DRS created successfully and orders/items marked as Out for Delivery.") {
-                    toast.success("DRS created successfully and orders/items marked as Out for Delivery.");
+                if (
+                    resp?.message ===
+                    "DRS updated successfully"
+                ) {
+                    toast.success(
+                        "DRS created successfully and orders/items marked as Out for Delivery."
+                    );
                     onClose();
                 }
             } catch (error) {
@@ -236,9 +239,12 @@ const DrsDetailsModal = ({ isOpen, onClose, id }: Props) => {
             try {
                 const resp = await createDRS(drsData);
                 if (
-                    resp?.message === "DRS created successfully and orders/items marked as Out for Delivery."
+                    resp?.message ===
+                    "DRS created successfully and orders/items marked as Out for Delivery."
                 ) {
-                    toast.success("DRS created successfully and orders/items marked as Out for Delivery.");
+                    toast.success(
+                        "DRS created successfully and orders/items marked as Out for Delivery."
+                    );
                     onClose();
                 }
             } catch (error) {

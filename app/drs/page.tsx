@@ -7,6 +7,7 @@ import { useAuth } from "../hooks/useAuth";
 import DrsDetailsModal from "./drsForm";
 import { getAllDRS, updateDrsStatus } from "../utils/drs";
 import generateDeliveryRunSheetPDF from "./drsMaker";
+import { exportToExcel } from "../utils/uploadToEcxel";
 
 const Manifest = () => {
     const { user } = useAuth();
@@ -87,6 +88,32 @@ const Manifest = () => {
         generateDeliveryRunSheetPDF(order)
     };
 
+
+    const handleDownload = () => {
+
+        const updatedFilteredOrder = filteredHubs.map((order) => ({
+            ...order, // Spread existing order properties
+            total_pcs: order.orderIds?.reduce((sum, items) => sum + (items?.itemsCount || 0), 0),
+            total_weight: order.orderIds?.reduce((sum, items) => sum + (items?.totalWeight || 0), 0)
+        }));
+
+        const keys = {
+            code: "DRS Code",
+            "deliveryBoyId.name": "Employee Name",
+            "hubId.name": "Hub Name",
+            vehicleNumber: "Vehicle Number",
+            total_pcs: "Total Pcs",
+            total_weight: "Total Weight",
+            status: "Order Status",
+            createdAt: "Created date",
+            updatedAt: "Last update On",
+        };
+        const currentDate = new Date().toLocaleDateString("en-GB").replace(/\//g, "-");
+        const fileName = `Drs_report_${currentDate}`;
+        exportToExcel(updatedFilteredOrder, keys, fileName);
+    };
+
+
     return (
         <div className="h-screen overflow-auto py-2 ">
             <div className="flex items-center justify-start mx-2 gap-4">
@@ -115,6 +142,12 @@ const Manifest = () => {
                         </option>
                     ))}
                 </select>
+                <p
+                    onClick={() => handleDownload()}
+                    className="text-white  cursor-pointer  bg-indigo-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 ml-4 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                    Download Report
+                </p>
                 <p
                     onClick={() => setShowOrderModal(true)}
                     className="text-white  bg-indigo-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 ml-4 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"

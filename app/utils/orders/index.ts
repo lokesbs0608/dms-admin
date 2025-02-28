@@ -82,6 +82,22 @@ const updateOrder = async (id: string, data: Partial<IOrder>) => {
         }
     }
 };
+// Update order
+const updateOrderDocket = async (id: string, data: Partial<IOrder>) => {
+    try {
+        const response = await instance.patch(`orders/${id}/docket`, data);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating employee:", error);
+        if ((error as ErrorWithResponse).response) {
+            handleToast({
+                err: {
+                    response: (error as ErrorWithResponse).response
+                }
+            });
+        }
+    }
+};
 
 // Delete hub
 const archiveHub = async (id: string) => {
@@ -122,6 +138,6 @@ export {
     getOrders,
     unarchiveHub,
     updateOrder,
-    archiveHub,
+    archiveHub, updateOrderDocket,
     createOrder
 };

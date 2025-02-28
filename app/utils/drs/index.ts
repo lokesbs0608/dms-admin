@@ -86,9 +86,7 @@ const getDRSById = async (id: string) => {
 // get drs
 const deleteDRSOrderById = async (drsId: string, orderId: string) => {
     try {
-        const response = await instance.delete(`/drs/remove-order`, {
-            data: { drsId, orderId } // Correct way to send data in DELETE request
-        });
+        const response = await instance.post(`/drs/remove-order?drsId=${drsId}&orderId=${orderId}`,);
 
         return response.data?.drsList;
     } catch (error) {

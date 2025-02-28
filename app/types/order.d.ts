@@ -74,10 +74,11 @@ interface IOrder {
     amount?: string;
     pickup_date?: Date | string;
     delivery_date?: Date | string;
+    docket_url?:string
 }
 
 interface IOrderTable {
-    _id?: string;
+    _id: string;
     consignorId?: string;
     consigneeId?: string;
     consignor?: IAddressDetails;
@@ -113,6 +114,7 @@ interface IOrderTable {
     drsId?: string | null;
     pickup_date?: Date | string;
     delivery_date?: Date | string;
+    docket_url?:string
 }
 
 // Define the Item type
