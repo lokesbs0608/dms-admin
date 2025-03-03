@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 const loginRoute = "/login"; // Define login route here
 
 // Define public routes that can be accessed without authentication
-const publicRoutes = ["/login", "/invitation"];
+const publicRoutes = ["/login", "/docket-number"];
 
 // Function to check if the current path is a public route
 const isPublicRoute = (path: string) => {
