@@ -1,6 +1,7 @@
 'use client'; // Mark this file as a client component
 
 import { Poppins } from "next/font/google";
+import { usePathname } from "next/navigation"; // Import usePathname hook
 import "./globals.css";
 import Sidebar from "./components/organisims/sideBar";
 import { SidebarData } from "./constants/sidebar";
@@ -13,21 +14,27 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700"],
 });
 
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const { isAuthenticated, user } = useAuth(); // Fetch authentication status
+  const pathname = usePathname(); // Get current route
+
+  const publicRoutes = ["/docket-number", "/login"];
+
+  // Check if the current route is a public route
+  const isPublicRoute = publicRoutes.includes(pathname);
 
   return (
     <html lang="en">
       <body className={`${poppins.variable}`}>
         <div className="md:flex">
           <Toaster />
-          {/* Render Sidebar if authenticated */}
-          {isAuthenticated && user?.type !== 'customer' && (
+          
+          {/* Hide Sidebar for public routes */}
+          {!isPublicRoute && user?.type !== "customer" && (
             <aside className="md:w-[10%] lg:w-[12%] w-full">
               <Sidebar items={SidebarData} />
             </aside>
