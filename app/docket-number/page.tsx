@@ -67,7 +67,7 @@ const DocketNumberSearch = () => {
                 <td className="border px-4 py-2">{data.status}</td>
               </tr>
               <tr>
-                <td className="border px-4 py-2 font-semibold">Source Hub</td>
+                <td className="border px-4 py-2 font-semibold">Origin Hub</td>
                 <td className="border px-4 py-2">{data.sourceHubId?.name || "N/A"}</td>
               </tr>
               <tr>
