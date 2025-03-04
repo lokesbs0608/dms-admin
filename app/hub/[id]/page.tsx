@@ -224,6 +224,9 @@ const HubForm = () => {
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
                         >
+                            <option value={''}>
+                                Select
+                            </option>
                             {employees.map((items) => {
                                 return (
                                     <option key={items?._id} value={items?._id}>
@@ -243,7 +246,11 @@ const HubForm = () => {
                             value={formData.emergency_person_id}
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
+
                         >
+                            <option value={''}>
+                                Select
+                            </option>
                             {employees.map((items) => {
                                 return (
                                     <option key={items?._id} value={items?._id}>

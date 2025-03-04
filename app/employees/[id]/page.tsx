@@ -229,6 +229,9 @@ const EmployeeForm = () => {
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
                         >
+                            <option value={''}>
+                                Select
+                            </option>
                             <option value="super_admin">Super Admin</option>
                             <option value="admin">Admin</option>
                             <option value="manager">Manager</option>
@@ -256,6 +259,9 @@ const EmployeeForm = () => {
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
                         >
+                            <option value={''}>
+                                Select
+                            </option>
                             {hubs?.map((items) => {
                                 return (
                                     <option key={items?._id} value={items?._id}>
@@ -273,6 +279,9 @@ const EmployeeForm = () => {
                             onChange={handleChange}
                             className="w-full mt-2 p-2 border rounded"
                         >
+                            <option value={''}>
+                                Select
+                            </option>
                             <option value="Active">Active</option>
                             <option value="Inactive">Inactive</option>
                         </select>
